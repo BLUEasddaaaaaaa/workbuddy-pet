@@ -1,0 +1,71 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title></title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+  <div id="pet-container">
+
+    <!-- 宠物精灵图（不含眼睛） -->
+    <img id="pet-img" src="../../assets/mypet.png" alt="pet" draggable="false">
+
+    <!-- 睡眠 GIF 动图（默认隐藏，30s 无操作自动切换） -->
+    <img id="sleep-img" src="../../assets/pet-sleeping.gif" alt="sleeping" draggable="false" style="display:none">
+
+    <!-- 阅读 GIF 动图（待机随机触发，概率 5%） -->
+    <img id="read-img" src="../../assets/read.gif" alt="reading" draggable="false" style="display:none">
+
+    <!-- 思考 GIF 动图（待机随机触发，概率 3%） -->
+    <img id="think-img" src="../../assets/think.gif" alt="thinking" draggable="false" style="display:none">
+
+    <!-- 工作 GIF 动图（CodeBuddy PreToolUse/PostToolUse 触发） -->
+    <!-- work.gif 不存在时自动降级显示 PNG+SVG idle，不影响其他功能 -->
+    <img id="work-img" src="../../assets/work.gif" alt="working" draggable="false" style="display:none">
+
+    <!-- 注意 GIF 动图（CodeBuddy Stop/Notification 触发，可复用 think.gif） -->
+    <img id="attention-img" src="../../assets/think.gif" alt="attention" draggable="false" style="display:none">
+
+    <!-- 开心 GIF 动图（WorkBuddy 任务完成时触发） -->
+    <img id="happy-img" src="../../assets/happy.gif" alt="happy" draggable="false" style="display:none">
+
+    <!-- 底部阴影（阅读/思考/开心动作时显示） -->
+    <div id="pet-shadow"></div>
+
+    <!-- SVG 眼睛层 -->
+    <!--
+      新模型：32×32 画布 → 160×160 输出，5px/格
+        左眼：col 12-13, row 14-17 (2×4格 → 10×20px)
+          - 上4像素 (row 14-15): #11022e
+          - 下4像素 (row 16-17): #000000
+        右眼：col 18-19, row 14-17 (2×4格 → 10×20px)
+          - 上4像素 (row 14-15): #11022e
+          - 下4像素 (row 16-17): #000000
+      使用 <g> 分组 + transform 实现眼球移动，每组内眼皮随组移动
+    -->
+    <svg id="eyes-svg" viewBox="0 0 160 160" xmlns="http://www.w3.org/2000/svg"
+         shape-rendering="crispEdges">
+
+      <!-- 左眼组 (12,14)-(13,17) → SVG (60,70) → 10×20 -->
+      <g id="left-eye-group" transform="translate(60, 70)">
+        <rect id="left-eye-upper" x="0" y="0" width="10" height="10" fill="#11022e"/>
+        <rect id="left-eye-lower" x="0" y="10" width="10" height="10" fill="#000000"/>
+        <rect id="left-lid" x="0" y="0" width="10" height="0" fill="#607af1"/>
+      </g>
+
+      <!-- 右眼组 (18,14)-(19,17) → SVG (90,70) → 10×20 -->
+      <g id="right-eye-group" transform="translate(90, 70)">
+        <rect id="right-eye-upper" x="0" y="0" width="10" height="10" fill="#11022e"/>
+        <rect id="right-eye-lower" x="0" y="10" width="10" height="10" fill="#000000"/>
+        <rect id="right-lid" x="0" y="0" width="10" height="0" fill="#607af1"/>
+      </g>
+
+    </svg>
+  </div>
+
+  <script src="renderer.js"></script>
+</body>
+</html>

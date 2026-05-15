@@ -1,0 +1,68 @@
+{
+  "name": "workbuddy-pet",
+  "version": "1.0.0",
+  "description": "A pixel desktop pet that reacts to CodeBuddy AI coding assistant — thinking, working, and celebrating when tasks complete.",
+  "main": "main.js",
+  "scripts": {
+    "start": "electron .",
+    "dev": "electron . --dev",
+    "build:win": "electron-builder --win",
+    "build:mac": "electron-builder --mac",
+    "build:linux": "electron-builder --linux",
+    "build:all": "electron-builder --win --mac --linux"
+  },
+  "author": "",
+  "license": "MIT",
+  "keywords": [
+    "desktop-pet",
+    "codebuddy",
+    "electron",
+    "pixel-art",
+    "companion"
+  ],
+  "devDependencies": {
+    "electron": "^35.7.5",
+    "electron-builder": "^26.8.1"
+  },
+  "build": {
+    "appId": "com.workbuddy.pet",
+    "productName": "WorkBuddy Pet",
+    "directories": {
+      "output": "dist"
+    },
+    "files": [
+      "main.js",
+      "preload.js",
+      "src/**",
+      "assets/**",
+      "hooks/**"
+    ],
+    "win": {
+      "target": [
+        {
+          "target": "nsis",
+          "arch": ["x64"]
+        }
+      ],
+      "icon": "assets/mypet.png"
+    },
+    "mac": {
+      "target": "dmg",
+      "icon": "assets/mypet.png"
+    },
+    "linux": {
+      "target": [
+        {
+          "target": "AppImage",
+          "arch": ["x64"]
+        }
+      ],
+      "icon": "assets/mypet.png"
+    },
+    "nsis": {
+      "oneClick": false,
+      "allowToChangeInstallationDirectory": true,
+      "unicode": true
+    }
+  }
+}

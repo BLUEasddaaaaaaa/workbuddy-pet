@@ -1,0 +1,33 @@
+node_modules/
+dist/
+out/
+.env
+
+# OS files
+.DS_Store
+Thumbs.db
+Desktop.ini
+
+# IDE
+.vscode/
+.idea/
+
+# Electron build output
+*.exe
+*.dmg
+*.AppImage
+*.deb
+*.blockmap
+
+# Logs
+logs/
+*.log
+npm-debug.log*
+
+# CodeBuddy internal data
+.codebuddy/
+.workbuddy/
+
+# Temp files
+*.tmp
+.tmp_*
