@@ -1,13 +1,16 @@
 {
   "name": "workbuddy-pet",
-  "version": "1.0.0",
-  "description": "A pixel desktop pet that reacts to CodeBuddy AI coding assistant — thinking, working, and celebrating when tasks complete.",
+  "version": "1.1.0",
+  "description": "An ambient pixel desktop companion that visualizes Codex agent activity.",
   "main": "main.js",
   "scripts": {
     "start": "electron .",
     "dev": "electron . --dev",
+    "test:js": "node --test tests/js/*.test.js",
+    "test:python": "python3 -m unittest discover -s tests/python -p \"test_*.py\" -v",
+    "test": "npm run test:js && npm run test:python",
     "build:win": "electron-builder --win",
-    "build:mac": "electron-builder --mac",
+    "build:mac": "electron-builder --mac --arm64",
     "build:linux": "electron-builder --linux",
     "build:all": "electron-builder --win --mac --linux"
   },
@@ -15,7 +18,7 @@
   "license": "MIT",
   "keywords": [
     "desktop-pet",
-    "codebuddy",
+    "codex",
     "electron",
     "pixel-art",
     "companion"
@@ -48,7 +51,7 @@
     },
     "mac": {
       "target": "dmg",
-      "icon": "assets/mypet.png"
+      "icon": "assets/mypet-icon.png"
     },
     "linux": {
       "target": [
