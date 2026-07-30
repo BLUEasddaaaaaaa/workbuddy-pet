@@ -4,9 +4,16 @@
 from __future__ import annotations
 
 import hashlib
+import http.client
 import json
+import os
+import sys
 from datetime import datetime, timezone
 
+
+PET_HOST = "127.0.0.1"
+PET_PORT = 18920
+POST_TIMEOUT_SECONDS = 0.2
 
 EVENT_TYPES = {
     "SessionStart": "session.started",
@@ -143,3 +150,58 @@ def normalize_event(payload: object, now: datetime | None = None) -> dict | None
         "tool_use_id": tool_use_id,
         "metadata": metadata,
     }
+
+
+def _configured_port() -> int:
+    raw_port = os.environ.get("WORKBUDDY_PORT")
+    if raw_port is None:
+        return PET_PORT
+    try:
+        port = int(raw_port)
+    except ValueError:
+        return PET_PORT
+    if not 1 <= port <= 65535:
+        return PET_PORT
+    return port
+
+
+def post_event(event: dict) -> None:
+    """Send one event to WorkBuddy and silently tolerate unavailability."""
+    body = json.dumps(event, separators=(",", ":")).encode("utf-8")
+    connection = http.client.HTTPConnection(
+        PET_HOST,
+        _configured_port(),
+        timeout=POST_TIMEOUT_SECONDS,
+    )
+    try:
+        connection.request(
+            "POST",
+            "/event",
+            body=body,
+            headers={
+                "Content-Type": "application/json",
+                "Content-Length": str(len(body)),
+            },
+        )
+        response = connection.getresponse()
+        response.read()
+    except (OSError, TimeoutError, http.client.HTTPException):
+        pass
+    finally:
+        connection.close()
+
+
+def main() -> int:
+    try:
+        payload = json.loads(sys.stdin.read())
+        event = normalize_event(payload)
+        if event is not None:
+            post_event(event)
+    except (ValueError, TypeError, OSError):
+        pass
+    sys.stdout.write("{}")
+    return 0
+
+
+if __name__ == "__main__":
+    raise SystemExit(main())
