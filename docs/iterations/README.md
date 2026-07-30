@@ -5,7 +5,7 @@ This directory records why each product iteration exists, what it changes, how i
 | Version | Product objective | Status | Record |
 |---|---|---|---|
 | v1.0.0 | Visualize CodeBuddy activity with a desktop pet | Completed baseline | Existing repository history and README |
-| v1.1.0 | Replace CodeBuddy Hooks with a safe Codex event path | Design approved | [v1.1.0 Codex Hooks](./v1.1.0-codex-hooks.md) |
+| v1.1.0 | Replace CodeBuddy Hooks with a safe Codex event path | Implementation complete; final acceptance pending | [v1.1.0 Codex Hooks](./v1.1.0-codex-hooks.md) |
 | v1.2.0 | Give permission and error conditions distinct visuals | Planned | Created when the iteration begins |
 | v1.3.0 | Add Apple Music awareness and headphones | Planned | Created when the iteration begins |
 | v1.4.0 | Add water and break reminders | Planned | Created when the iteration begins |

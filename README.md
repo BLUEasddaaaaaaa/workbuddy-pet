@@ -44,7 +44,7 @@ A low-interruption pixel desktop companion that turns Codex lifecycle events int
 
 ```bash
 # Clone the repository
-git clone https://github.com/YOUR_USERNAME/workbuddy-pet.git
+git clone https://github.com/BLUEasddaaaaaaa/workbuddy-pet.git
 cd workbuddy-pet
 
 # Install dependencies
@@ -165,7 +165,6 @@ Place GIF files in the `assets/` directory following the naming convention:
 | `happy.gif` | Happy/celebration animation |
 | `pet-sleeping.gif` | Sleeping animation |
 | `read.gif` | Idle reading animation |
-| `attention.gif` | Attention/notification animation (optional, falls back to `think.gif`) |
 
 Requirements:
 - Pixel art style, matching `mypet.png`
@@ -244,7 +243,7 @@ workbuddy-pet/
 
 ```bash
 # 克隆仓库
-git clone https://github.com/YOUR_USERNAME/workbuddy-pet.git
+git clone https://github.com/BLUEasddaaaaaaa/workbuddy-pet.git
 cd workbuddy-pet
 
 # 安装依赖
@@ -365,7 +364,6 @@ npm run build:all
 | `happy.gif` | 开心/庆祝动画 |
 | `pet-sleeping.gif` | 睡眠动画 |
 | `read.gif` | 待机阅读动画 |
-| `attention.gif` | 注意/通知动画（可选，缺失时回退到 `think.gif`） |
 
 要求：
 - 像素风格，与 `mypet.png` 一致
