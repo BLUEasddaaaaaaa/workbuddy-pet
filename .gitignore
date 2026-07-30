@@ -32,5 +32,9 @@ npm-debug.log*
 *.tmp
 .tmp_*
 
+# Python cache
+__pycache__/
+*.py[cod]
+
 # Isolated development worktrees
 .worktrees/
