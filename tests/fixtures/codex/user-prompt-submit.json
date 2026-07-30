@@ -1,0 +1,10 @@
+{
+  "session_id": "thr_test",
+  "turn_id": "turn_test",
+  "transcript_path": "/private/secret/transcript.jsonl",
+  "cwd": "/private/project",
+  "hook_event_name": "UserPromptSubmit",
+  "model": "test-model",
+  "permission_mode": "default",
+  "prompt": "private prompt"
+}

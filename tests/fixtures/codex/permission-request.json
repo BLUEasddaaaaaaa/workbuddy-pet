@@ -1,0 +1,14 @@
+{
+  "session_id": "thr_test",
+  "turn_id": "turn_test",
+  "transcript_path": "/private/secret/transcript.jsonl",
+  "cwd": "/private/project",
+  "hook_event_name": "PermissionRequest",
+  "model": "test-model",
+  "permission_mode": "default",
+  "tool_name": "Bash",
+  "tool_input": {
+    "command": "printf private",
+    "description": "private approval reason"
+  }
+}

@@ -1,0 +1,8 @@
+{
+  "session_id": "thr_test",
+  "transcript_path": "/private/secret/transcript.jsonl",
+  "cwd": "/private/project",
+  "hook_event_name": "SessionEnd",
+  "model": "test-model",
+  "reason": "other"
+}
