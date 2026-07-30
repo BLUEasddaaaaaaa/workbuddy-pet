@@ -31,3 +31,6 @@ npm-debug.log*
 # Temp files
 *.tmp
 .tmp_*
+
+# Isolated development worktrees
+.worktrees/
