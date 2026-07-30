@@ -154,13 +154,14 @@
 
   function enterSleep() {
     if (isSleeping) return;
+    if (happyTimer) return;
+    clearTransientTimers();
     isSleeping = true;
     hasMouse = false;
 
-    // 如有进行中的待机动作或开心动作，先取消
+    // 如有进行中的非完成态动作，先取消
     idleActionActive = false;
-    if (happyTimer) { clearTimeout(happyTimer); happyTimer = null; }
-    petContainer.classList.remove('reading', 'thinking', 'happy');
+    petContainer.classList.remove('reading', 'thinking', 'working', 'attention');
     petShadow.style.display = 'none';
 
     // 切换显示：隐藏所有非睡眠元素
@@ -175,6 +176,7 @@
 
   function wakeUp() {
     if (!isSleeping) return;
+    clearTransientTimers();
     isSleeping = false;
 
     // 切换显示：隐藏睡眠 GIF，显示 SVG 眼睛 + 精灵图
@@ -187,9 +189,8 @@
 
     // 确保待机动作也被清理
     idleActionActive = false;
-    if (happyTimer) { clearTimeout(happyTimer); happyTimer = null; }
     hideAllActionGifs();
-    petContainer.classList.remove('reading', 'thinking', 'happy');
+    petContainer.classList.remove('reading', 'thinking', 'working', 'attention');
     petShadow.style.display = 'none';
 
     // 重置空闲计时
@@ -206,6 +207,10 @@
   var lastIdleCheck   = 0;
   var lastReadTime     = -READ_COOLDOWN;  // 初始允许立即触发
   var idleActionActive = false;
+  var idleActionTimer = null;
+  var happyTimer = null;
+  var workingTimer = null;
+  var attentionTimer = null;
 
   var readImg  = $('read-img');
   var thinkImg = $('think-img');
@@ -221,6 +226,21 @@
     attentionImg.style.display = 'none';
     happyImg.style.display = 'none';
     sleepImg.style.display = 'none';
+  }
+
+  function clearTransientTimers() {
+    if (idleActionTimer) {
+      clearTimeout(idleActionTimer);
+      idleActionTimer = null;
+    }
+    if (workingTimer) {
+      clearTimeout(workingTimer);
+      workingTimer = null;
+    }
+    if (attentionTimer) {
+      clearTimeout(attentionTimer);
+      attentionTimer = null;
+    }
   }
 
   function setPetState(state) {
@@ -256,7 +276,8 @@
     petShadow.style.display = 'block';
 
     // 定时恢复 idle
-    setTimeout(function () {
+    idleActionTimer = setTimeout(function () {
+      idleActionTimer = null;
       hideAllActionGifs();
       petContainer.classList.remove('reading', 'thinking', 'working');
       petShadow.style.display = 'none';
@@ -326,6 +347,7 @@
   // ========== 通用恢复 idle ==========
 
   function restoreIdle() {
+    clearTransientTimers();
     hideAllActionGifs();
     petContainer.classList.remove('reading', 'thinking', 'working', 'happy', 'attention');
     petShadow.style.display = 'none';
@@ -337,10 +359,9 @@
 
   // ========== 开心状态（外部触发，任务完成） ==========
 
-  var happyTimer = null;
-
   function triggerHappy() {
     if (happyTimer) { clearTimeout(happyTimer); happyTimer = null; }
+    clearTransientTimers();
     if (isSleeping) wakeUp();
 
     idleActionActive = true;
@@ -357,14 +378,13 @@
     playCompletionSound();
 
     happyTimer = setTimeout(function () {
-      restoreIdle();
       happyTimer = null;
+      restoreIdle();
     }, 3000);
   }
 
-  // ========== 工作状态（CodeBuddy PreToolUse / PostToolUse 触发） ==========
+  // ========== 工作状态（Codex tool.started / tool.finished 触发） ==========
 
-  var workingTimer = null;
   var WORKING_TIMEOUT = 30000;  // 30s 无新事件 → 自动回 idle（防止 hook 丢失）
   var workGifUnavailable = false;  // work.gif 缺失时降级
 
@@ -376,8 +396,8 @@
   });
 
   function triggerWorking() {
-    if (workingTimer) { clearTimeout(workingTimer); workingTimer = null; }
     if (happyTimer) return;  // happy 优先级最高，不打断
+    clearTransientTimers();
 
     if (isSleeping) wakeUp();
 
@@ -400,19 +420,18 @@
     petShadow.style.display = 'block';
 
     workingTimer = setTimeout(function () {
-      restoreIdle();
       workingTimer = null;
+      restoreIdle();
     }, WORKING_TIMEOUT);
   }
 
-  // ========== 注意状态（CodeBuddy Stop / Notification 触发） ==========
+  // ========== 注意状态（Codex permission.requested 触发） ==========
 
-  var attentionTimer = null;
   var ATTENTION_DURATION = 5000;  // 5s 后自动回 idle
 
   function triggerAttention() {
-    if (attentionTimer) { clearTimeout(attentionTimer); attentionTimer = null; }
     if (happyTimer) return;  // happy 优先
+    clearTransientTimers();
 
     if (isSleeping) wakeUp();
 
@@ -428,23 +447,14 @@
     petShadow.style.display = 'block';
 
     attentionTimer = setTimeout(function () {
-      restoreIdle();
       attentionTimer = null;
+      restoreIdle();
     }, ATTENTION_DURATION);
   }
 
-  // ========== 统一外部状态分发（CodeBuddy hook 事件入口） ==========
+  // ========== 统一外部状态分发（WorkBuddy 状态入口） ==========
   //
-  // 完整事件映射表（与 hooks/codebuddy-hook.js 保持同步）：
-  //   SessionStart                → idle      （会话开始）
-  //   SessionEnd                  → sleeping  （会话结束，进入睡眠）
-  //   UserPromptSubmit            → thinking  （用户发送提示词）
-  //   PreToolUse                  → working   （工具调用前）
-  //   PostToolUse                 → working   （工具调用后）
-  //   Stop (stop_hook_active=fasle) → happy   （AI 完成任务）
-  //   Notification (idle_prompt)  → happy     （任务弹窗）
-  //   Notification (其他)         → attention （需要通知）
-  //   PreCompact                  → idle      （上下文压缩前）
+  // 语义事件映射由主进程 event-router.js 维护，renderer 只接收视觉状态。
 
   function triggerExternalState(state) {
     switch (state) {
@@ -458,18 +468,19 @@
         triggerAttention();
         break;
       case 'thinking':
-        if (workingTimer) { clearTimeout(workingTimer); workingTimer = null; }
         if (happyTimer) return;
+        clearTransientTimers();
         if (isSleeping) wakeUp();
         idleActionActive = false;   // 允许 setPetState 进入
         setPetState('thinking');
         break;
       case 'sleeping':
+        if (happyTimer) return;
         if (!isSleeping) enterSleep();
         break;
       case 'idle':
-        if (workingTimer) { clearTimeout(workingTimer); workingTimer = null; }
-        if (attentionTimer) { clearTimeout(attentionTimer); attentionTimer = null; }
+        if (happyTimer) return;
+        clearTransientTimers();
         if (isSleeping) wakeUp();
         else restoreIdle();
         break;
@@ -664,14 +675,9 @@
     lastMouseY = mouseY;
   });
 
-  // CodeBuddy hook 事件 → 宠物状态（通用通道）
+  // Codex Hook 事件经主进程归一化后 → 宠物状态（统一通道）
   window.petAPI.onTriggerState(function (state) {
     triggerExternalState(state);
-  });
-
-  // 向后兼容：旧版 /happy 路由直接触发
-  window.petAPI.onTriggerHappy(function () {
-    triggerHappy();
   });
 
   scheduleBlink();

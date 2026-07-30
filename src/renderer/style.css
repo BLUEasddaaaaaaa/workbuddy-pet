@@ -179,7 +179,7 @@ body {
   50%      { transform: scaleX(0.5); opacity: 0.05; }
 }
 
-/* ========== 工作状态（CodeBuddy PreToolUse/PostToolUse 触发） ========== */
+/* ========== 工作状态（Codex 工具事件触发） ========== */
 
 #work-img, #attention-img {
   position: absolute;
@@ -213,7 +213,7 @@ body {
   50%      { transform: scaleX(0.85); opacity: 0.15; }
 }
 
-/* ========== 注意状态（CodeBuddy Stop/Notification 触发） ========== */
+/* ========== 注意状态（Codex PermissionRequest 触发） ========== */
 
 /* 注意状态 — 轻微脉冲，提示需要用户关注 */
 #pet-container.attention {
