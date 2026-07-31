@@ -259,9 +259,9 @@ The notes are intentionally outside the Git repository, so do not include them i
 Run:
 
 ```bash
-export BLUEBERRY_NODE_BIN=/Users/molan/.cache/codex-runtimes/codex-primary-runtime/dependencies/node/bin
-export PATH="$BLUEBERRY_NODE_BIN:$PATH"
-/Users/molan/.cache/codex-runtimes/codex-primary-runtime/dependencies/bin/fallback/pnpm test
+/Users/molan/.cache/codex-runtimes/codex-primary-runtime/dependencies/node/bin/node \
+  --test tests/js/*.test.js
+python3 -m unittest discover -s tests/python -p "test_*.py" -v
 ```
 
 Expected: all Node assertions and all Python test methods pass, including 3 product naming tests.
@@ -286,8 +286,7 @@ Run:
 ```bash
 export BLUEBERRY_NODE_BIN=/Users/molan/.cache/codex-runtimes/codex-primary-runtime/dependencies/node/bin
 export PATH="$BLUEBERRY_NODE_BIN:$PATH"
-/Users/molan/.cache/codex-runtimes/codex-primary-runtime/dependencies/bin/fallback/pnpm \
-  run build:mac
+./node_modules/.bin/electron-builder --mac --arm64
 ```
 
 Expected:
