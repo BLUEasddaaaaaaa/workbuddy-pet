@@ -10,7 +10,7 @@ contextBridge.exposeInMainWorld('petAPI', {
   onMousePosition: (callback) => {
     ipcRenderer.on('mouse-position', (_event, pos) => callback(pos));
   },
-  // 通用状态触发（Codex Hook 事件 → WorkBuddy 状态）
+  // 通用状态触发（Codex Hook 事件 → Blueberry 状态）
   // state: 'idle' | 'thinking' | 'working' | 'happy' | 'sleeping' | 'attention'
   onTriggerState: (callback) => {
     ipcRenderer.on('trigger-state', (_event, state) => callback(state));

@@ -1,5 +1,5 @@
 {
-  "name": "workbuddy-pet",
+  "name": "blueberry-pet",
   "version": "1.1.0",
   "description": "An ambient pixel desktop companion that visualizes Codex agent activity.",
   "main": "main.js",
@@ -28,8 +28,8 @@
     "electron-builder": "^26.8.1"
   },
   "build": {
-    "appId": "com.workbuddy.pet",
-    "productName": "WorkBuddy Pet",
+    "appId": "com.blueberry.pet",
+    "productName": "Blueberry",
     "directories": {
       "output": "dist"
     },

@@ -452,7 +452,7 @@
     }, ATTENTION_DURATION);
   }
 
-  // ========== 统一外部状态分发（WorkBuddy 状态入口） ==========
+  // ========== 统一外部状态分发（Blueberry 状态入口） ==========
   //
   // 语义事件映射由主进程 event-router.js 维护，renderer 只接收视觉状态。
 

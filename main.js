@@ -61,7 +61,7 @@ ipcMain.on('drag-end', () => {
   mainWindow.setIgnoreMouseEvents(false);
 });
 
-// ========== 本地事件服务（Codex Hook → WorkBuddy 事件 → 宠物状态） ==========
+// ========== 本地事件服务（Codex Hook → Blueberry 事件 → 宠物状态） ==========
 let httpServer = null;
 
 function sendStateToRenderer(state) {

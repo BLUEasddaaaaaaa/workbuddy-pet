@@ -111,7 +111,7 @@ function createEventServer({
         try {
           deliverState(payload.state);
         } catch (error) {
-          logger.error(`[workbuddy] renderer state delivery failed: ${error.message}`);
+          logger.error(`[blueberry] renderer state delivery failed: ${error.message}`);
           sendJson(res, 500, {
             status: 'error',
             message: 'state_delivery_failed',
@@ -154,7 +154,7 @@ function createEventServer({
       try {
         deliverState(routed.state);
       } catch (error) {
-        logger.error(`[workbuddy] renderer state delivery failed: ${error.message}`);
+        logger.error(`[blueberry] renderer state delivery failed: ${error.message}`);
         sendJson(res, 500, {
           status: 'error',
           message: 'state_delivery_failed',
@@ -188,15 +188,15 @@ function startEventServer({
 
   server.on('error', (error) => {
     if (error.code === 'EADDRINUSE') {
-      logger.error(`[workbuddy] port ${port} is already in use`);
+      logger.error(`[blueberry] port ${port} is already in use`);
       return;
     }
-    logger.error(`[workbuddy] event server error: ${error.message}`);
+    logger.error(`[blueberry] event server error: ${error.message}`);
   });
 
   server.listen(port, host, () => {
     if (typeof logger.log === 'function') {
-      logger.log(`[workbuddy] event server listening on http://${host}:${port}`);
+      logger.log(`[blueberry] event server listening on http://${host}:${port}`);
     }
   });
 

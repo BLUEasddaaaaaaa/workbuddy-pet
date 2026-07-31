@@ -1,5 +1,5 @@
 {
-  "description": "WorkBuddy ambient Codex activity integration.",
+  "description": "Blueberry ambient Codex activity integration.",
   "hooks": {
     "SessionStart": [
       {

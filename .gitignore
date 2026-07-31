@@ -27,6 +27,7 @@ npm-debug.log*
 # CodeBuddy internal data
 .codebuddy/
 .workbuddy/
+.blueberry/
 
 # Temp files
 *.tmp

@@ -51,7 +51,7 @@ class HookCliIntegrationTests(unittest.TestCase):
     def run_hook(self, payload, port, raw_input=None):
         if raw_input is None:
             raw_input = json.dumps(payload)
-        env = {**os.environ, "WORKBUDDY_PORT": str(port)}
+        env = {**os.environ, "BLUEBERRY_PORT": str(port)}
         return subprocess.run(
             [sys.executable, str(HOOK_PATH)],
             input=raw_input,

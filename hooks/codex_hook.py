@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Normalize Codex lifecycle hooks into privacy-safe WorkBuddy events."""
+"""Normalize Codex lifecycle hooks into privacy-safe Blueberry events."""
 
 from __future__ import annotations
 
@@ -90,7 +90,7 @@ def _event_id(
 
 
 def normalize_event(payload: object, now: datetime | None = None) -> dict | None:
-    """Return one privacy-filtered WorkBuddy event, or None when ignored."""
+    """Return one privacy-filtered Blueberry event, or None when ignored."""
     if not isinstance(payload, dict):
         return None
 
@@ -153,7 +153,7 @@ def normalize_event(payload: object, now: datetime | None = None) -> dict | None
 
 
 def _configured_port() -> int:
-    raw_port = os.environ.get("WORKBUDDY_PORT")
+    raw_port = os.environ.get("BLUEBERRY_PORT")
     if raw_port is None:
         return PET_PORT
     try:
@@ -166,7 +166,7 @@ def _configured_port() -> int:
 
 
 def post_event(event: dict) -> None:
-    """Send one event to WorkBuddy and silently tolerate unavailability."""
+    """Send one event to Blueberry and silently tolerate unavailability."""
     body = json.dumps(event, separators=(",", ":")).encode("utf-8")
     connection = http.client.HTTPConnection(
         PET_HOST,
