@@ -217,7 +217,6 @@
   var workImg  = $('work-img');
   var attentionImg = $('attention-img');
   var completionStatePolicy = window.BlueberryCompletionStatePolicy.createCompletionStatePolicy();
-  var externalStatePolicy = window.BlueberryExternalStatePolicy.createExternalStatePolicy();
   var happyImg = $('happy-img');
   var petShadow = $('pet-shadow');
 
@@ -464,7 +463,6 @@
   // 语义事件映射由主进程 event-router.js 维护，renderer 只接收视觉状态。
 
   function triggerExternalState(state) {
-    if (!externalStatePolicy.shouldApply(state)) return;
     if (state !== 'happy' && state !== 'sleeping') {
       completionStatePolicy.onActivity();
     }
