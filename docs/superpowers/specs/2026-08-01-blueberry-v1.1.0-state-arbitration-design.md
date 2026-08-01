@@ -164,7 +164,7 @@ Renderer policy tests must prove that the same approved state is a no-op and doe
 
 Repeat the earlier two controlled event rounds against the rebuilt installed application. Record event delivery latency and visible states at meaningful hold boundaries. Then run two overlapping simulated sessions and confirm that Attention and Happy remain observable while repeated tool events do not restart Working.
 
-Acceptance requires all existing Node and Python tests, the new arbitration tests, packaging verification, and the runtime matrix to pass. The stable GitHub release remains on hold until this evidence is recorded.
+Acceptance requires all existing Node and Python tests, the new arbitration tests, packaging verification, and the runtime matrix to pass. At design approval time, the stable GitHub release was to remain on hold until this evidence was recorded.
 
 Packaging verification must include an artifact-provenance gate: extract the freshly built `app.asar` before installation and byte-compare all coordination, bridge, policy, renderer, and Electron composition files against the intended worktree. Repeat the comparison after installation. Runtime evidence is invalid if either comparison fails, because a stale package can make correct source and tests appear broken.
 
