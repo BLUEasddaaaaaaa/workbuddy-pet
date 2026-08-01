@@ -278,6 +278,7 @@
 
     // 显示底部阴影
     petShadow.style.display = 'block';
+    externalStatePolicy.markVisualState(state);
 
     // 定时恢复 idle
     idleActionTimer = setTimeout(function () {
@@ -491,9 +492,7 @@
         clearTransientTimers();
         if (isSleeping) wakeUp();
         idleActionActive = false;   // 允许 setPetState 进入
-        if (setPetState('thinking')) {
-          externalStatePolicy.markVisualState('thinking');
-        }
+        setPetState('thinking');
         break;
       case 'sleeping':
         if (completionStatePolicy.onSleepRequested(Boolean(happyTimer)) === 'deferred') return;

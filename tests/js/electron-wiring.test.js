@@ -158,9 +158,13 @@ test('renderer synchronizes external policy after local visual transitions', () 
   const triggerHappy = functionBody('triggerHappy', 'triggerWorking');
   const triggerWorking = functionBody('triggerWorking', 'triggerAttention');
   const triggerAttention = functionBody('triggerAttention', 'triggerExternalState');
+  const triggerExternalState = functionBody('triggerExternalState', 'updateTargets');
 
   assert.match(enterSleep, /petContainer\.classList\.add\('sleeping'\);\s*externalStatePolicy\.markVisualState\('sleeping'\);/);
   assert.match(wakeUp, /lastMouseMoveTime = performance\.now\(\);\s*externalStatePolicy\.markVisualState\('idle'\);/);
+  assert.match(setPetState, /petShadow\.style\.display = 'block';\s*externalStatePolicy\.markVisualState\(state\);/);
+  assert.ok(setPetState.indexOf('return false') < setPetState.indexOf('markVisualState(state)'));
+  assert.ok(setPetState.indexOf("petContainer.classList.add('thinking')") < setPetState.indexOf('markVisualState(state)'));
   assert.match(setPetState, /lastMouseMoveTime = performance\.now\(\);[^\n]*\n\s*externalStatePolicy\.markVisualState\('idle'\);/);
   assert.match(restoreIdle, /lastMouseMoveTime = performance\.now\(\);\s*externalStatePolicy\.markVisualState\('idle'\);/);
   assert.match(triggerHappy, /petContainer\.classList\.add\('happy'\);[\s\S]*externalStatePolicy\.markVisualState\('happy'\);/);
@@ -169,5 +173,6 @@ test('renderer synchronizes external policy after local visual transitions', () 
   assert.match(triggerAttention, /if \(happyTimer\) \{ clearTimeout\(happyTimer\); happyTimer = null; \}/);
   assert.ok(triggerAttention.indexOf('clearTimeout(happyTimer)') < triggerAttention.indexOf("petContainer.classList.add('attention')"));
   assert.match(triggerAttention, /petContainer\.classList\.add\('attention'\);[\s\S]*externalStatePolicy\.markVisualState\('attention'\);/);
-  assert.match(source, /if \(setPetState\('thinking'\)\) \{\s*externalStatePolicy\.markVisualState\('thinking'\);\s*\}/);
+  assert.match(triggerExternalState, /setPetState\('thinking'\);/);
+  assert.doesNotMatch(triggerExternalState, /markVisualState\('thinking'\)/);
 });
