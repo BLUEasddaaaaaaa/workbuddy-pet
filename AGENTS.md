@@ -14,6 +14,15 @@
 - Stop and ask the user when the same area exposes repeated architecture conflicts, when three attempted fixes fail, or when the next fix would add a new authority/state source instead of resolving the existing one.
 - Preserve the failing test, reproduction steps, logs, and current Git state while waiting for direction. Do not hide, weaken, or rewrite an acceptance requirement to obtain a pass.
 
+## Mandatory user-confirmation stop
+
+- When a requested change is not working after the first well-evidenced fix attempt, stop. Report the remaining failure and ask the user before attempting another fix.
+- When a fix exposes a new architecture conflict, product-semantics question, or state-authority problem, stop immediately and ask the user. Do not continue with another patch based only on agent judgment.
+- While waiting for confirmation, do not modify production code, add further fixes, run downstream acceptance or packaging, replace the installed application, or publish anything.
+- Do not spawn or re-dispatch implementation, debugging, review, or acceptance subagents after the stop condition is reached unless the user explicitly approves the next action.
+- A user request to “continue” authorizes only the currently agreed plan. It does not authorize an unbounded sequence of repairs when new problems change that plan.
+- Never claim that a version is complete, nearly complete, accepted, or ready when a known required behavior is failing or has not been verified.
+
 ## Verification and release claims
 
 - A successful HTTP response proves event acceptance, not visible animation success.
