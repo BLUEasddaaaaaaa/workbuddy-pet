@@ -122,9 +122,7 @@ function createStateCoordinator({
     record.expiryTimer = setTimer(() => {
       record.expiryTimer = null;
       if (disposed || sessions.get(sessionId) !== record || !ACTIVE_STATES.has(record.state)) return;
-      record.state = 'idle';
-      record.sequence = ++sequence;
-      record.updatedAt = now();
+      sessions.delete(sessionId);
       reconsider('idle');
     }, ACTIVE_EXPIRY_MS);
   }
