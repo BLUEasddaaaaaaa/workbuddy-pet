@@ -449,6 +449,7 @@
   var ATTENTION_DURATION = 5000;  // 5s 后自动回 idle
 
   function triggerAttention() {
+    if (happyTimer) { clearTimeout(happyTimer); happyTimer = null; }
     clearTransientTimers();
 
     if (isSleeping) wakeUp();
@@ -477,10 +478,6 @@
 
   function triggerExternalState(state) {
     if (!externalStatePolicy.shouldApply(state)) return;
-    if (state !== 'happy' && happyTimer) {
-      clearTimeout(happyTimer);
-      happyTimer = null;
-    }
     if (state !== 'happy' && state !== 'sleeping') {
       completionStatePolicy.onActivity();
     }

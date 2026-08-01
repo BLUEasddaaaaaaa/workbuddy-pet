@@ -174,6 +174,8 @@ function createStateCoordinator({
     if (!VISUAL_STATES.has(state)) return { ok: false, error: 'invalid_visual_state' };
     if (state === displayedState) return { ok: true };
 
+    clearHoldTimer();
+    pending = false;
     displayedState = state;
     displayedAt = now();
     return { ok: true };
