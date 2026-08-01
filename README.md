@@ -19,6 +19,7 @@ A low-interruption pixel desktop companion that turns Codex lifecycle events int
 - **Completion sound** — Cheerful arpeggio (C5→C6) on task completion
 - **Zero interference** — 160×160px transparent always-on-top window
 - **Pixel art style** — Cute pixel-art sprites with smooth CSS animations
+- **Session-aware animation scheduling** — Priorities, minimum display times, and duplicate suppression prevent high-frequency Hooks from constantly restarting the pet
 
 ## 🎬 Animation States
 
@@ -192,8 +193,11 @@ workbuddy-pet/
 └── src/
     ├── main/
     │   ├── event-router.js         # Protocol validation and state mapping
-    │   └── event-server.js         # Loopback HTTP and deduplication
+    │   ├── event-server.js         # Loopback HTTP and event deduplication
+    │   ├── state-coordinator.js     # Per-session priority and display holds
+    │   └── renderer-state-bridge.js # Renderer-readiness buffering
     └── renderer/
+        ├── external-state-policy.js # Actual visual-state deduplication
         ├── index.html
         ├── renderer.js
         └── style.css

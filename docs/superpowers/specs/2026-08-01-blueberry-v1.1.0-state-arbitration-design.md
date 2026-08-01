@@ -166,6 +166,8 @@ Repeat the earlier two controlled event rounds against the rebuilt installed app
 
 Acceptance requires all existing Node and Python tests, the new arbitration tests, packaging verification, and the runtime matrix to pass. The stable GitHub release remains on hold until this evidence is recorded.
 
+Packaging verification must include an artifact-provenance gate: extract the freshly built `app.asar` before installation and byte-compare all coordination, bridge, policy, renderer, and Electron composition files against the intended worktree. Repeat the comparison after installation. Runtime evidence is invalid if either comparison fails, because a stale package can make correct source and tests appear broken.
+
 ## 8. Evolution After v1.1.0
 
 The coordinator is intentionally extensible without being general-purpose. Later iterations may add:

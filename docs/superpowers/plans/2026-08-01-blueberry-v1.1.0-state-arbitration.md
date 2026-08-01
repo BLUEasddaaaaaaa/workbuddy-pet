@@ -309,6 +309,8 @@ If Computer Use generates observer Hooks, label those samples and rely on determ
 
 Create the evidence document with commands, totals, timings, pass/fail matrix, limitations, and release recommendation. Change iteration status to stabilized only if all required results pass; otherwise keep it in progress and list the failing metric. Add an interview note explaining metric-driven root-cause isolation and the lightweight-versus-full-engine product trade-off.
 
+Before replacing the installed application, extract the new worktree build's `app.asar` and byte-compare `renderer.js`, `external-state-policy.js`, `state-coordinator.js`, `renderer-state-bridge.js`, and `main.js` with the worktree. After installation, repeat the exact comparison against the installed `app.asar`. Stop acceptance immediately on any mismatch; HTTP success from an unproven artifact is not release evidence.
+
 - [ ] **Step 6: Commit Task 4**
 
 ```bash
