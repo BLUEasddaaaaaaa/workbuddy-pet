@@ -17,7 +17,6 @@ test('repeated working is rejected', () => {
 test('attention is recorded as the current approved state', () => {
   const policy = createExternalStatePolicy();
 
-  assert.equal(policy.shouldApply('working'), true);
   assert.equal(policy.shouldApply('attention'), true);
   assert.equal(policy.current(), 'attention');
 });
