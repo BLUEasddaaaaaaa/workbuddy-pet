@@ -292,6 +292,7 @@
 
       idleActionActive = false;
       lastMouseMoveTime = performance.now();  // 重置睡眠计时
+      externalStatePolicy.markVisualState('idle');
     }, duration);
 
     return true;
@@ -442,7 +443,7 @@
   var ATTENTION_DURATION = 5000;  // 5s 后自动回 idle
 
   function triggerAttention() {
-    if (happyTimer) return;  // happy 优先
+    if (happyTimer) { clearTimeout(happyTimer); happyTimer = null; }
     clearTransientTimers();
 
     if (isSleeping) wakeUp();
@@ -490,8 +491,9 @@
         clearTransientTimers();
         if (isSleeping) wakeUp();
         idleActionActive = false;   // 允许 setPetState 进入
-        setPetState('thinking');
-        externalStatePolicy.markVisualState('thinking');
+        if (setPetState('thinking')) {
+          externalStatePolicy.markVisualState('thinking');
+        }
         break;
       case 'sleeping':
         if (completionStatePolicy.onSleepRequested(Boolean(happyTimer)) === 'deferred') return;

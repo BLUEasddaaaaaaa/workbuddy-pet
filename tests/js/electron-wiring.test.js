@@ -147,12 +147,13 @@ test('renderer rejects duplicate external state before transition side effects',
 
 test('renderer synchronizes external policy after local visual transitions', () => {
   const source = read('src/renderer/renderer.js');
-  const functionBody = (name, nextName) => source.slice(
-    source.indexOf(`function ${name}() {`),
-    source.indexOf(`function ${nextName}`, source.indexOf(`function ${name}() {`)),
-  );
+  const functionBody = (name, nextName) => {
+    const start = source.indexOf(`function ${name}`);
+    return source.slice(start, source.indexOf(`function ${nextName}`, start));
+  };
   const enterSleep = functionBody('enterSleep', 'wakeUp');
   const wakeUp = functionBody('wakeUp', 'scheduleNextIdleAction');
+  const setPetState = functionBody('setPetState', 'checkIdleActions');
   const restoreIdle = functionBody('restoreIdle', 'triggerHappy');
   const triggerHappy = functionBody('triggerHappy', 'triggerWorking');
   const triggerWorking = functionBody('triggerWorking', 'triggerAttention');
@@ -160,9 +161,13 @@ test('renderer synchronizes external policy after local visual transitions', () 
 
   assert.match(enterSleep, /petContainer\.classList\.add\('sleeping'\);\s*externalStatePolicy\.markVisualState\('sleeping'\);/);
   assert.match(wakeUp, /lastMouseMoveTime = performance\.now\(\);\s*externalStatePolicy\.markVisualState\('idle'\);/);
+  assert.match(setPetState, /lastMouseMoveTime = performance\.now\(\);[^\n]*\n\s*externalStatePolicy\.markVisualState\('idle'\);/);
   assert.match(restoreIdle, /lastMouseMoveTime = performance\.now\(\);\s*externalStatePolicy\.markVisualState\('idle'\);/);
   assert.match(triggerHappy, /petContainer\.classList\.add\('happy'\);[\s\S]*externalStatePolicy\.markVisualState\('happy'\);/);
   assert.match(triggerWorking, /petContainer\.classList\.add\('working'\);[\s\S]*externalStatePolicy\.markVisualState\('working'\);/);
+  assert.doesNotMatch(triggerAttention, /if \(happyTimer\) return/);
+  assert.match(triggerAttention, /if \(happyTimer\) \{ clearTimeout\(happyTimer\); happyTimer = null; \}/);
+  assert.ok(triggerAttention.indexOf('clearTimeout(happyTimer)') < triggerAttention.indexOf("petContainer.classList.add('attention')"));
   assert.match(triggerAttention, /petContainer\.classList\.add\('attention'\);[\s\S]*externalStatePolicy\.markVisualState\('attention'\);/);
-  assert.match(source, /setPetState\('thinking'\);\s*externalStatePolicy\.markVisualState\('thinking'\);/);
+  assert.match(source, /if \(setPetState\('thinking'\)\) \{\s*externalStatePolicy\.markVisualState\('thinking'\);\s*\}/);
 });
