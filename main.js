@@ -13,6 +13,9 @@ process.env.PET_SCALE = String(scale);
 
 let mainWindow;
 const rendererStateBridge = createRendererStateBridge();
+const VISUAL_STATES = new Set(['sleeping', 'idle', 'thinking', 'working', 'happy', 'attention']);
+let httpServer = null;
+let stateCoordinator = null;
 
 async function createWindow() {
   const { width: screenWidth, height: screenHeight } = screen.getPrimaryDisplay().workAreaSize;
@@ -77,9 +80,13 @@ ipcMain.on('drag-end', () => {
   mainWindow.setIgnoreMouseEvents(false);
 });
 
+ipcMain.on('visual-state-changed', (event, state) => {
+  if (!mainWindow || mainWindow.isDestroyed() || event.sender !== mainWindow.webContents) return;
+  if (!VISUAL_STATES.has(state) || !stateCoordinator) return;
+  stateCoordinator.observeVisualState(state);
+});
+
 // ========== 本地事件服务（Codex Hook → Blueberry 事件 → 宠物状态） ==========
-let httpServer = null;
-let stateCoordinator = null;
 
 function sendStateToRenderer(state) {
   rendererStateBridge.publish(state);

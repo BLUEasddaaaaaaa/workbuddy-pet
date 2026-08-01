@@ -106,6 +106,19 @@ test('preload exposes one external state channel', () => {
   assert.match(source, /onTriggerState/);
   assert.doesNotMatch(source, /onTriggerHappy/);
   assert.doesNotMatch(source, /CodeBuddy/);
+  assert.match(source, /reportVisualState:\s*\(state\)\s*=>\s*ipcRenderer\.send\('visual-state-changed', state\)/);
+});
+
+
+test('main accepts visual acknowledgements only from the current window', () => {
+  const source = read('main.js');
+  const handler = functionSource(source, "ipcMain.on('visual-state-changed'", '\n\n// ========== 本地事件服务');
+
+  assert.match(handler, /event\.sender !== mainWindow\.webContents/);
+  assert.match(handler, /mainWindow\.isDestroyed\(\)/);
+  assert.match(handler, /VISUAL_STATES\.has\(state\)/);
+  assert.match(handler, /stateCoordinator\.observeVisualState\(state\)/);
+  assert.doesNotMatch(handler, /\.send\(|\.accept\(|reconsider/);
 });
 
 
@@ -160,19 +173,21 @@ test('renderer synchronizes external policy after local visual transitions', () 
   const triggerAttention = functionBody('triggerAttention', 'triggerExternalState');
   const triggerExternalState = functionBody('triggerExternalState', 'updateTargets');
 
-  assert.match(enterSleep, /petContainer\.classList\.add\('sleeping'\);\s*externalStatePolicy\.markVisualState\('sleeping'\);/);
-  assert.match(wakeUp, /lastMouseMoveTime = performance\.now\(\);\s*externalStatePolicy\.markVisualState\('idle'\);/);
-  assert.match(setPetState, /petShadow\.style\.display = 'block';\s*externalStatePolicy\.markVisualState\(state\);/);
-  assert.ok(setPetState.indexOf('return false') < setPetState.indexOf('markVisualState(state)'));
-  assert.ok(setPetState.indexOf("petContainer.classList.add('thinking')") < setPetState.indexOf('markVisualState(state)'));
-  assert.match(setPetState, /lastMouseMoveTime = performance\.now\(\);[^\n]*\n\s*externalStatePolicy\.markVisualState\('idle'\);/);
-  assert.match(restoreIdle, /lastMouseMoveTime = performance\.now\(\);\s*externalStatePolicy\.markVisualState\('idle'\);/);
-  assert.match(triggerHappy, /petContainer\.classList\.add\('happy'\);[\s\S]*externalStatePolicy\.markVisualState\('happy'\);/);
-  assert.match(triggerWorking, /petContainer\.classList\.add\('working'\);[\s\S]*externalStatePolicy\.markVisualState\('working'\);/);
+  const commitVisualState = functionBody('commitVisualState', 'hideAllActionGifs');
+  assert.match(commitVisualState, /externalStatePolicy\.markVisualState\(state\);\s*window\.petAPI\.reportVisualState\(state === 'reading' \? 'idle' : state\);/);
+  assert.match(enterSleep, /petContainer\.classList\.add\('sleeping'\);\s*commitVisualState\('sleeping'\);/);
+  assert.match(wakeUp, /lastMouseMoveTime = performance\.now\(\);\s*commitVisualState\('idle'\);/);
+  assert.match(setPetState, /petShadow\.style\.display = 'block';\s*commitVisualState\(state\);/);
+  assert.ok(setPetState.indexOf('return false') < setPetState.indexOf('commitVisualState(state)'));
+  assert.ok(setPetState.indexOf("petContainer.classList.add('thinking')") < setPetState.indexOf('commitVisualState(state)'));
+  assert.match(setPetState, /lastMouseMoveTime = performance\.now\(\);[^\n]*\n\s*commitVisualState\('idle'\);/);
+  assert.match(restoreIdle, /lastMouseMoveTime = performance\.now\(\);\s*commitVisualState\('idle'\);/);
+  assert.match(triggerHappy, /petContainer\.classList\.add\('happy'\);[\s\S]*commitVisualState\('happy'\);/);
+  assert.match(triggerWorking, /petContainer\.classList\.add\('working'\);[\s\S]*commitVisualState\('working'\);/);
   assert.doesNotMatch(triggerAttention, /if \(happyTimer\) return/);
   assert.match(triggerAttention, /if \(happyTimer\) \{ clearTimeout\(happyTimer\); happyTimer = null; \}/);
   assert.ok(triggerAttention.indexOf('clearTimeout(happyTimer)') < triggerAttention.indexOf("petContainer.classList.add('attention')"));
-  assert.match(triggerAttention, /petContainer\.classList\.add\('attention'\);[\s\S]*externalStatePolicy\.markVisualState\('attention'\);/);
+  assert.match(triggerAttention, /petContainer\.classList\.add\('attention'\);[\s\S]*commitVisualState\('attention'\);/);
   assert.match(triggerExternalState, /setPetState\('thinking'\);/);
   assert.doesNotMatch(triggerExternalState, /markVisualState\('thinking'\)/);
 });

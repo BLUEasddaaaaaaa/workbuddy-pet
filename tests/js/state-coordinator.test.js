@@ -252,6 +252,57 @@ test('Attention does not expire after 30000ms and changes only on a session even
 });
 
 
+test('renderer Idle acknowledgement allows repeated Attention in the same session', () => {
+  const { accept, clock, coordinator, emissions } = makeHarness();
+  accept('permission.requested', 'one', 'attention');
+  clock.tick(6000);
+  assert.deepEqual(coordinator.observeVisualState('idle'), { ok: true });
+  assert.deepEqual(emissions, [{ state: 'attention', at: 0 }]);
+  accept('permission.requested', 'one', 'attention');
+  assert.deepEqual(emissions, [
+    { state: 'attention', at: 0 },
+    { state: 'attention', at: 6000 },
+  ]);
+});
+
+
+test('same-state visual acknowledgement does not restart the display hold', () => {
+  const { accept, clock, coordinator, emissions } = makeHarness();
+  accept('permission.requested', 'one', 'attention');
+  clock.tick(2000);
+  assert.deepEqual(coordinator.observeVisualState('attention'), { ok: true });
+  accept('tool.started', 'one', 'working');
+  clock.tick(999);
+  assert.equal(emissions.length, 1);
+  clock.tick(1);
+  assert.deepEqual(emissions.at(-1), { state: 'working', at: 3000 });
+});
+
+
+test('visual acknowledgement never emits or recomputes session state', () => {
+  const { accept, clock, coordinator, emissions } = makeHarness();
+  accept('turn.finished', 'one', 'happy');
+  clock.tick(100);
+  accept('tool.started', 'one', 'working');
+  assert.equal(clock.timerCount(), 2);
+  assert.deepEqual(coordinator.observeVisualState('idle'), { ok: true });
+  assert.deepEqual(emissions, [{ state: 'happy', at: 0 }]);
+  assert.equal(clock.timerCount(), 1);
+});
+
+
+test('visual acknowledgement rejects malformed and disposed input without throwing', () => {
+  const { coordinator, emissions } = makeHarness();
+  for (const state of [null, undefined, '', 'reading', 'bogus', 3, {}]) {
+    assert.doesNotThrow(() => coordinator.observeVisualState(state));
+    assert.equal(coordinator.observeVisualState(state).ok, false);
+  }
+  coordinator.dispose();
+  assert.deepEqual(coordinator.observeVisualState('idle'), { ok: false, error: 'disposed' });
+  assert.deepEqual(emissions, []);
+});
+
+
 test('expired active session is removed and cannot survive as a phantom Idle session', () => {
   const { accept, clock, emissions } = makeHarness();
   accept('tool.started', 'stale', 'working');

@@ -172,7 +172,7 @@
 
     // 添加睡眠呼吸脉动动画
     petContainer.classList.add('sleeping');
-    externalStatePolicy.markVisualState('sleeping');
+    commitVisualState('sleeping');
   }
 
   function wakeUp() {
@@ -196,7 +196,7 @@
 
     // 重置空闲计时
     lastMouseMoveTime = performance.now();
-    externalStatePolicy.markVisualState('idle');
+    commitVisualState('idle');
   }
 
   // ========== 待机随机动作系统（read 5% / think 3%） ==========
@@ -222,6 +222,11 @@
   var externalStatePolicy = window.BlueberryExternalStatePolicy.createExternalStatePolicy();
   var happyImg = $('happy-img');
   var petShadow = $('pet-shadow');
+
+  function commitVisualState(state) {
+    externalStatePolicy.markVisualState(state);
+    window.petAPI.reportVisualState(state === 'reading' ? 'idle' : state);
+  }
 
   function hideAllActionGifs() {
     readImg.style.display = 'none';
@@ -278,7 +283,7 @@
 
     // 显示底部阴影
     petShadow.style.display = 'block';
-    externalStatePolicy.markVisualState(state);
+    commitVisualState(state);
 
     // 定时恢复 idle
     idleActionTimer = setTimeout(function () {
@@ -293,7 +298,7 @@
 
       idleActionActive = false;
       lastMouseMoveTime = performance.now();  // 重置睡眠计时
-      externalStatePolicy.markVisualState('idle');
+      commitVisualState('idle');
     }, duration);
 
     return true;
@@ -361,7 +366,7 @@
     svgEl.style.display = '';
     idleActionActive = false;
     lastMouseMoveTime = performance.now();
-    externalStatePolicy.markVisualState('idle');
+    commitVisualState('idle');
   }
 
   // ========== 开心状态（外部触发，任务完成） ==========
@@ -382,7 +387,7 @@
 
     petContainer.classList.add('happy');
     petShadow.style.display = 'block';
-    externalStatePolicy.markVisualState('happy');
+    commitVisualState('happy');
 
     playCompletionSound();
 
@@ -431,7 +436,7 @@
 
     petContainer.classList.add('working');
     petShadow.style.display = 'block';
-    externalStatePolicy.markVisualState('working');
+    commitVisualState('working');
 
     workingTimer = setTimeout(function () {
       workingTimer = null;
@@ -459,7 +464,7 @@
 
     petContainer.classList.add('attention');
     petShadow.style.display = 'block';
-    externalStatePolicy.markVisualState('attention');
+    commitVisualState('attention');
 
     attentionTimer = setTimeout(function () {
       attentionTimer = null;

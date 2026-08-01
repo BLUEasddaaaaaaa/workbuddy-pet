@@ -31,6 +31,7 @@ const EVENT_STATES = Object.freeze({
 });
 
 const ACTIVE_STATES = new Set(['thinking', 'working']);
+const VISUAL_STATES = new Set(Object.keys(STATE_PRIORITY));
 
 
 function createStateCoordinator({
@@ -168,6 +169,18 @@ function createStateCoordinator({
     return { ok: true };
   }
 
+  function observeVisualState(state) {
+    if (disposed) return { ok: false, error: 'disposed' };
+    if (!VISUAL_STATES.has(state)) return { ok: false, error: 'invalid_visual_state' };
+    if (state === displayedState) return { ok: true };
+
+    clearHoldTimer();
+    pending = false;
+    displayedState = state;
+    displayedAt = now();
+    return { ok: true };
+  }
+
   function dispose() {
     if (disposed) return;
     disposed = true;
@@ -177,7 +190,7 @@ function createStateCoordinator({
     pending = false;
   }
 
-  return { accept, dispose };
+  return { accept, dispose, observeVisualState };
 }
 
 
