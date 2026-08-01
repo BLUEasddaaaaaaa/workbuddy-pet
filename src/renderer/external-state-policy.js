@@ -9,11 +9,13 @@
   }
 }(typeof globalThis !== 'undefined' ? globalThis : this, function buildPolicy() {
   function createExternalStatePolicy() {
-    let currentState = null;
+    let currentState;
 
     return {
       shouldApply(state) {
-        return state !== currentState;
+        if (state === currentState) return false;
+        currentState = state;
+        return true;
       },
 
       markVisualState(state) {
