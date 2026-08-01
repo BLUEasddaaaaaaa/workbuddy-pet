@@ -127,6 +127,31 @@ test('Attention immediately interrupts Working during its hold', () => {
 });
 
 
+test('Attention holds for 3000ms before yielding to Working', () => {
+  const { accept, clock, emissions } = makeHarness();
+  accept('permission.requested', 'one', 'attention');
+  clock.tick(250);
+  accept('tool.started', 'one', 'working');
+  clock.tick(2749);
+  assert.deepEqual(emissions, [{ state: 'attention', at: 0 }]);
+  clock.tick(1);
+  assert.deepEqual(emissions.at(-1), { state: 'working', at: 3000 });
+});
+
+
+test('Happy is not urgent and waits for the current Working hold', () => {
+  const { accept, clock, emissions } = makeHarness();
+  accept('tool.started', 'worker', 'working');
+  clock.tick(250);
+  accept('turn.finished', 'finisher', 'happy');
+  assert.deepEqual(emissions, [{ state: 'working', at: 0 }]);
+  clock.tick(749);
+  assert.equal(emissions.length, 1);
+  clock.tick(1);
+  assert.deepEqual(emissions.at(-1), { state: 'happy', at: 1000 });
+});
+
+
 test('another session Working cannot replace current Attention until Attention advances', () => {
   const { accept, clock, emissions } = makeHarness();
   accept('permission.requested', 'attention-session', 'attention');
@@ -170,6 +195,19 @@ test('ending one of two sessions reveals the remaining session state', () => {
 });
 
 
+test('ending the most recently updated of tied sessions preserves the equivalent live state', () => {
+  const { accept, clock, emissions } = makeHarness();
+  accept('tool.started', 'older', 'working');
+  clock.tick(100);
+  accept('tool.started', 'newer', 'working');
+  clock.tick(900);
+  accept('session.ended', 'newer', 'sleeping');
+  assert.deepEqual(emissions, [{ state: 'working', at: 0 }]);
+  accept('session.ended', 'older', 'sleeping');
+  assert.deepEqual(emissions.at(-1), { state: 'sleeping', at: 1000 });
+});
+
+
 test('ending the final session emits Sleeping', () => {
   const { accept, emissions } = makeHarness();
   accept('session.started', 'one', 'idle');
@@ -201,6 +239,16 @@ test('Thinking and Working expire after 30000ms of inactivity and resolve to Idl
       assert.deepEqual(emissions.at(-1), { state: 'idle', at: 30000 });
     });
   }
+});
+
+
+test('Attention does not expire after 30000ms and changes only on a session event', () => {
+  const { accept, clock, emissions } = makeHarness();
+  accept('permission.requested', 'one', 'attention');
+  clock.tick(60000);
+  assert.deepEqual(emissions, [{ state: 'attention', at: 0 }]);
+  accept('session.ended', 'one', 'sleeping');
+  assert.deepEqual(emissions.at(-1), { state: 'sleeping', at: 60000 });
 });
 
 
