@@ -115,10 +115,12 @@ If no session remains after `session.ended`, the candidate is Sleeping. A later 
 3. If the candidate equals the displayed state, do not emit or restart the minimum timer.
 4. If the displayed state has satisfied its minimum duration, emit the candidate immediately.
 5. If the minimum duration has not elapsed:
-   - a higher-priority candidate may interrupt immediately;
-   - an equal- or lower-priority candidate becomes the single pending candidate;
-   - a newer pending candidate replaces the older one only if it has higher priority, or the same priority with a later session update.
+   - Attention is the only urgent state and may interrupt immediately because the user must act;
+   - every other candidate waits, including a higher-priority Working candidate arriving during Thinking;
+   - the single pending candidate is refreshed from the highest-priority live session state rather than appended to a queue.
 6. When the hold expires, discard the stored candidate as an instruction and recompute from live sessions. This prevents stale queued animations.
+
+Priority selects meaning across sessions; minimum display protects continuity over time. These are separate decisions. A lower-priority state never replaces a still-current higher-priority session merely because three seconds elapsed. It becomes visible only after the higher-priority session receives a resolving event or ends.
 
 There is deliberately no unbounded animation queue. Blueberry represents current meaning, not a replay of every Hook.
 

@@ -117,7 +117,7 @@ coordinator.accept({ eventType: 'tool.finished', sessionId: 'a', state: 'working
 assert.deepEqual(emitted, ['working']);
 ```
 
-Also test: Thinking holds Working for 1000 ms; Attention interrupts Working; Working waits behind Attention for 3000 ms; Happy holds for 3000 ms unless Attention arrives; ending session `a` reveals session `b`; ending the final session emits Sleeping; hold expiry recomputes live state instead of replaying a stale pending candidate; Thinking/Working expire after 30000 ms and resolve to Idle; `dispose()` removes all timers.
+Also test: Thinking holds Working for 1000 ms; Attention is the only state that immediately interrupts a hold; Working never replaces a still-current Attention session merely because 3000 ms elapsed; Happy holds for 3000 ms unless Attention arrives; ending session `a` reveals session `b`; ending the final session emits Sleeping; hold expiry recomputes live state instead of replaying a stale pending candidate; Thinking/Working expire after 30000 ms and resolve to Idle; `dispose()` removes all timers.
 
 - [ ] **Step 2: Run the coordinator test and verify RED**
 
@@ -278,7 +278,7 @@ Use the coordinator test harness or a small fixture runner to record these metri
 | Same-state replay count | 0 additional emissions |
 | Thinking minimum display | at least 1000 ms |
 | Working minimum display | at least 1000 ms |
-| Attention minimum display | at least 3000 ms against lower-priority events |
+| Attention continuity | at least 3000 ms and until its session advances or ends |
 | Happy minimum display | at least 3000 ms unless Attention arrives |
 | Final-session end | Sleeping emitted |
 | One-of-two session end | remaining session state emitted |
