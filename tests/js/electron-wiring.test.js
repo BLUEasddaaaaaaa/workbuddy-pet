@@ -28,7 +28,6 @@ test('main process composes the standalone event server', () => {
 
   assert.match(source, /require\('\.\/src\/main\/event-server'\)/);
   assert.match(source, /require\('\.\/src\/main\/state-coordinator'\)/);
-  assert.match(source, /require\('\.\/src\/main\/renderer-state-bridge'\)/);
   assert.match(source, /createStateCoordinator\(\{\s*emitState: sendStateToRenderer,?\s*\}\)/);
   assert.match(source, /onEvent:\s*\(event\)\s*=>\s*stateCoordinator\.accept\(event\)/);
   assert.match(source, /onState:\s*sendStateToRenderer/);
@@ -51,52 +50,28 @@ test('main process disposes app-level coordination and closes the event server',
 });
 
 
-test('main process routes state through the renderer readiness bridge', () => {
+test('main process sends state only while a renderer window is available', () => {
   const source = read('main.js');
   const sendState = functionSource(source, 'function sendStateToRenderer(state) {', '\n\nfunction startHttpTrigger');
+  const guard = sendState.indexOf('if (!mainWindow || mainWindow.isDestroyed()) return;');
+  const delivery = sendState.indexOf("mainWindow.webContents.send('trigger-state', state);");
 
-  assert.match(sendState, /rendererStateBridge\.publish\(state\)/);
-  assert.match(source, /rendererStateBridge\.attach\([\s\S]*?webContents\.send\('trigger-state', state\)/);
-  assert.match(source, /rendererStateBridge\.detach\(\)/);
-  assert.match(source, /rendererStateBridge\.clear\(\)/);
+  assert.ok(guard >= 0);
+  assert.ok(delivery > guard);
 });
 
 
 test('app-level coordinator and server are not recreated during window activation', () => {
   const source = read('main.js');
   const startTrigger = functionSource(source, 'function startHttpTrigger() {', '\n\nfunction stopAppServices');
-  const activateStart = source.indexOf("app.on('activate', async () => {");
+  const activateStart = source.indexOf("app.on('activate', () => {");
   assert.ok(activateStart >= 0);
   const activate = source.slice(activateStart);
 
   assert.match(startTrigger, /if \(httpServer\) return;/);
   assert.match(startTrigger, /if \(!stateCoordinator\) \{[\s\S]*?createStateCoordinator/);
-  assert.match(activate, /await createWindow\(\)/);
+  assert.match(activate, /createWindow\(\)/);
   assert.doesNotMatch(activate, /startHttpTrigger|createStateCoordinator|startEventServer/);
-});
-
-
-test('window loading is awaited before renderer delivery is attached', () => {
-  const source = read('main.js');
-  const createWindow = functionSource(source, 'async function createWindow() {', '\n\n// ========== IPC');
-  const load = createWindow.indexOf('await window.loadFile(');
-  const attach = createWindow.indexOf('rendererStateBridge.attach(');
-
-  assert.ok(load >= 0);
-  assert.ok(attach > load);
-});
-
-
-test('initial services start only after the renderer window is ready', () => {
-  const source = read('main.js');
-  const readyStart = source.indexOf('app.whenReady().then(async () => {');
-  const readyEnd = source.indexOf('\n});', readyStart);
-  const ready = source.slice(readyStart, readyEnd);
-
-  assert.ok(readyStart >= 0);
-  assert.ok(ready.indexOf('await createWindow();') >= 0);
-  assert.ok(ready.indexOf('startMousePoll();') > ready.indexOf('await createWindow();'));
-  assert.ok(ready.indexOf('startHttpTrigger();') > ready.indexOf('await createWindow();'));
 });
 
 

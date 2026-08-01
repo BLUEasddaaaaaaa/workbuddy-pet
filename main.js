@@ -2,7 +2,6 @@ const { app, BrowserWindow, screen, ipcMain } = require('electron');
 const path = require('path');
 const { startEventServer } = require('./src/main/event-server');
 const { createStateCoordinator } = require('./src/main/state-coordinator');
-const { createRendererStateBridge } = require('./src/main/renderer-state-bridge');
 
 // ========== 缩放参数 ==========
 // 用法: npm start -- --scale=2  (2x 大小 = 512x512)
@@ -12,12 +11,11 @@ const petSize = 160 * scale;
 process.env.PET_SCALE = String(scale);
 
 let mainWindow;
-const rendererStateBridge = createRendererStateBridge();
 
-async function createWindow() {
+function createWindow() {
   const { width: screenWidth, height: screenHeight } = screen.getPrimaryDisplay().workAreaSize;
 
-  const window = new BrowserWindow({
+  mainWindow = new BrowserWindow({
     width: petSize,
     height: petSize,
     x: screenWidth - petSize - 30,
@@ -35,29 +33,16 @@ async function createWindow() {
       nodeIntegration: false,
     },
   });
-  mainWindow = window;
 
-  window.setIgnoreMouseEvents(false);
-
-  window.on('closed', () => {
-    if (mainWindow !== window) return;
-    mainWindow = null;
-    rendererStateBridge.detach();
-  });
+  mainWindow.loadFile(path.join(__dirname, 'src', 'renderer', 'index.html'));
+  mainWindow.setIgnoreMouseEvents(false);
 
   // 修复 Windows DWM 在窗口失焦时丢失透明层
-  window.on('blur', () => {
-    window.setBackgroundColor('#00000000');
+  mainWindow.on('blur', () => {
+    mainWindow.setBackgroundColor('#00000000');
   });
-  window.on('focus', () => {
-    window.setBackgroundColor('#00000000');
-  });
-
-  await window.loadFile(path.join(__dirname, 'src', 'renderer', 'index.html'));
-  if (mainWindow !== window || window.isDestroyed()) return;
-  rendererStateBridge.attach((state) => {
-    if (mainWindow !== window || window.isDestroyed()) return;
-    window.webContents.send('trigger-state', state);
+  mainWindow.on('focus', () => {
+    mainWindow.setBackgroundColor('#00000000');
   });
 }
 
@@ -82,7 +67,8 @@ let httpServer = null;
 let stateCoordinator = null;
 
 function sendStateToRenderer(state) {
-  rendererStateBridge.publish(state);
+  if (!mainWindow || mainWindow.isDestroyed()) return;
+  mainWindow.webContents.send('trigger-state', state);
 }
 
 function startHttpTrigger() {
@@ -100,7 +86,6 @@ function startHttpTrigger() {
 }
 
 function stopAppServices() {
-  rendererStateBridge.clear();
   if (stateCoordinator) {
     stateCoordinator.dispose();
     stateCoordinator = null;
@@ -131,8 +116,8 @@ function startMousePoll() {
   }, 16); // ~60fps
 }
 
-app.whenReady().then(async () => {
-  await createWindow();
+app.whenReady().then(() => {
+  createWindow();
   startMousePoll();
   startHttpTrigger();
 });
@@ -146,8 +131,8 @@ app.on('before-quit', () => {
   stopAppServices();
 });
 
-app.on('activate', async () => {
+app.on('activate', () => {
   if (BrowserWindow.getAllWindows().length === 0) {
-    await createWindow();
+    createWindow();
   }
 });
