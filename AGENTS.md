@@ -7,6 +7,31 @@
 - `SessionEnd` means that the main session ended; it does not prove task success.
 - When an event is ambiguous, prefer a neutral visual state over a positive or negative judgment.
 
+## Fixed v1.1.0 Codex-to-Blueberry mapping
+
+- Keep the following mapping unchanged throughout v1.1.0. Revisit richer or more precise animation behavior only in a later explicitly approved iteration.
+
+| Codex or local condition | Blueberry state | v1.1.0 behavior |
+|---|---|---|
+| `SessionStart` | `Idle` | The Codex conversation is active and Blueberry remains awake in standby. |
+| `UserPromptSubmit` | `Thinking` | Codex received the user's task. |
+| `PreToolUse` | `Working` | Codex started using a tool. |
+| `PostToolUse` | `Working` | Codex finished one tool operation but may continue working; do not restart an unchanged Working animation. |
+| `PermissionRequest` | `Attention` | The user needs to review an approval request. |
+| `Stop` | `Happy` | For v1.1.0 only, treat Stop as the turn-completion celebration. Revisit completion reliability in v1.2.0. |
+| `SessionEnd` | `Idle` | End Codex activity and return to awake standby; do not trigger sleep. |
+| Local mouse inactivity timeout | `Sleeping` | Sleeping is driven by local mouse inactivity, not by a Codex Hook. |
+| Local mouse movement after sleep | `Idle` | Wake Blueberry and return to awake standby. |
+
+## Fixed v1.1.0 pending-state policy
+
+- Keep at most one pending state. Never maintain a FIFO history of animations to replay.
+- If there is no pending state, store the newly eligible state as the pending candidate while the current animation is protected.
+- If a pending state already exists, replace it only when the new candidate has equal or higher priority. Discard a lower-priority candidate.
+- Merge repeated occurrences of the same state; they must not restart the current animation or create another pending entry.
+- When a persistent state's protection period ends, resolve from the latest confirmed logical state rather than blindly replaying the historical pending event.
+- One-shot animation return behavior and all minimum-display and auto-return durations remain unconfirmed until the user approves the state table. Do not invent or change those values during implementation.
+
 ## Stop and ask when the product meaning is uncertain
 
 - Stop implementation and ask the user before changing product meaning, success criteria, privacy boundaries, or the meaning of an animation.
