@@ -29,3 +29,12 @@
 - Verify installed macOS builds against the exact worktree by byte-comparing critical `app.asar` files before and after installation.
 - Prefer deterministic tests and CDP renderer inspection for animation state. Computer Use can generate Codex Tool Hooks and must not be the sole evidence for concurrent-state behavior.
 - Do not call v1.1.0 complete or release-ready while a required automated, installed-runtime, multi-session, or package-identity gate is failing.
+
+## Context continuity
+
+- Treat `docs/context.md` as the confirmed continuity ledger for critical project decisions, current state, known problems, prohibitions, and next steps.
+- When system-provided history shows that conversation context was compacted, read `docs/context.md` before continuing the task.
+- Before deciding a critical task definition—especially Hook semantics, version scope, acceptance criteria, architecture ownership, release state, or an explicit user prohibition—search `docs/context.md` for an existing confirmed definition.
+- After detected context compaction, summarize any material new continuity information and show the exact proposed entry to the user. Append it to `docs/context.md` only after the user confirms it.
+- Keep confirmed decisions, current observations, known problems, prohibitions, and next steps distinct. Never record an inference as a confirmed fact.
+- Append new dated entries instead of silently overwriting history. Mark superseded decisions explicitly as deprecated and link them to the replacing decision.
