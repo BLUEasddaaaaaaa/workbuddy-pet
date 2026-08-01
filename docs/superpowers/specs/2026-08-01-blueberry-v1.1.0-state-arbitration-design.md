@@ -73,6 +73,8 @@ The module is independent of Electron and HTTP so its behavior can be tested det
 
 The Electron main process owns one coordinator and sends only approved visual transitions to the renderer over the existing IPC channel. This keeps multi-session product policy out of DOM code.
 
+Implementation review exposed a renderer-readiness race not explicit in the original design: the coordinator can approve a state before the renderer IPC delivery callback is attached. A focused readiness bridge therefore buffers only the latest approved state while detached and replays it exactly once after attachment. It is a delivery-lifecycle component, not another state authority; priority and holds remain in the coordinator, while presentation deduplication remains in the renderer.
+
 ### Renderer
 
 The renderer remains responsible for presenting existing assets, completion sound, drag behavior, eye movement, and local idle behavior. It gains explicit same-state deduplication so receiving the same approved state twice cannot reset a GIF or timer.
