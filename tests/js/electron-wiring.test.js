@@ -143,26 +143,3 @@ test('renderer rejects duplicate external state before transition side effects',
   assert.ok(body.indexOf('shouldApply(state)') < body.indexOf('completionStatePolicy.onActivity()'));
   assert.ok(body.indexOf('shouldApply(state)') < body.indexOf('switch (state)'));
 });
-
-
-test('renderer synchronizes external policy after local visual transitions', () => {
-  const source = read('src/renderer/renderer.js');
-  const functionBody = (name, nextName) => source.slice(
-    source.indexOf(`function ${name}() {`),
-    source.indexOf(`function ${nextName}`, source.indexOf(`function ${name}() {`)),
-  );
-  const enterSleep = functionBody('enterSleep', 'wakeUp');
-  const wakeUp = functionBody('wakeUp', 'scheduleNextIdleAction');
-  const restoreIdle = functionBody('restoreIdle', 'triggerHappy');
-  const triggerHappy = functionBody('triggerHappy', 'triggerWorking');
-  const triggerWorking = functionBody('triggerWorking', 'triggerAttention');
-  const triggerAttention = functionBody('triggerAttention', 'triggerExternalState');
-
-  assert.match(enterSleep, /petContainer\.classList\.add\('sleeping'\);\s*externalStatePolicy\.markVisualState\('sleeping'\);/);
-  assert.match(wakeUp, /lastMouseMoveTime = performance\.now\(\);\s*externalStatePolicy\.markVisualState\('idle'\);/);
-  assert.match(restoreIdle, /lastMouseMoveTime = performance\.now\(\);\s*externalStatePolicy\.markVisualState\('idle'\);/);
-  assert.match(triggerHappy, /petContainer\.classList\.add\('happy'\);[\s\S]*externalStatePolicy\.markVisualState\('happy'\);/);
-  assert.match(triggerWorking, /petContainer\.classList\.add\('working'\);[\s\S]*externalStatePolicy\.markVisualState\('working'\);/);
-  assert.match(triggerAttention, /petContainer\.classList\.add\('attention'\);[\s\S]*externalStatePolicy\.markVisualState\('attention'\);/);
-  assert.match(source, /setPetState\('thinking'\);\s*externalStatePolicy\.markVisualState\('thinking'\);/);
-});

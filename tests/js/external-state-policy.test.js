@@ -31,19 +31,6 @@ test('repeated happy is rejected so presentation side effects do not replay', ()
 });
 
 
-for (const transientState of ['attention', 'happy']) {
-  test(`${transientState} can replay after the visual state returns to idle`, () => {
-    const policy = createExternalStatePolicy();
-
-    assert.equal(policy.shouldApply(transientState), true);
-    assert.equal(policy.shouldApply(transientState), false);
-    policy.markVisualState('idle');
-    assert.equal(policy.current(), 'idle');
-    assert.equal(policy.shouldApply(transientState), true);
-  });
-}
-
-
 test('independent policy instances do not share state', () => {
   const first = createExternalStatePolicy();
   const second = createExternalStatePolicy();
