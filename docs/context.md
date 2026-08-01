@@ -46,3 +46,12 @@ This file contains user-confirmed continuity information. Agents must follow the
 - Attention and Happy are one-shot visuals. After their protected display completes, Blueberry recomputes and displays the latest logical state instead of returning to a hardcoded state.
 - The scheduler keeps at most one pending state. An equal- or higher-priority candidate replaces the pending state, a lower-priority candidate is discarded, and repeated states are merged.
 - The exact state-priority order remains unconfirmed and must be approved before implementation.
+
+## 2026-08-02：v1.1.0 状态优先级与保护期规则
+
+- Blueberry v1.1.0 的固定状态优先级从高到低为：Attention 5、Happy 4、Working 3、Thinking 2、Idle 1、Sleeping 0。
+- 高优先级状态不能打断仍处于最低保护时间内的低优先级动画。
+- 优先级只决定保护时间内哪一个待播放候选状态能够保留，不赋予立即打断权。
+- 调度器最多保留一个待播放状态，不维护动画播放队列。
+- 相同或更高优先级的新候选状态替换当前待播放状态，更低优先级候选状态被丢弃。
+- 重复状态必须合并，不得重启动画或延长当前保护时间。

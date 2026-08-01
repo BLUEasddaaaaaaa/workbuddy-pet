@@ -5,6 +5,8 @@
 - **Target platform:** Apple Silicon Mac, initially verified on macOS 26.5.2
 - **Baseline:** Blueberry v1.0.0 CodeBuddy integration
 
+> **2026-08-02 design update:** The state-controller rules in Section 5.3 supersede older statements in this document that assign visible-state decisions to multiple modules, map `SessionEnd` to Sleeping, or use different interruption and timing behavior.
+
 ## 1. Product Context
 
 Blueberry is an environment-aware desktop companion for people who use coding agents. It turns otherwise invisible agent activity into low-interruption visual feedback.
@@ -132,6 +134,31 @@ It must never block or rewrite a tool call, approve or deny a permission request
 - Continue to own animation playback, timeouts, wake-up, sleep, sound, eye tracking, blinking, and random reading.
 - Receive only the mapped visual state in v1.1.0.
 - Avoid broad refactoring until the Codex event path is verified.
+
+### 5.3 Superseding Single State Controller Design
+
+Blueberry v1.1.0 has exactly one Renderer-side state controller with authority to choose the user-visible animation. The responsibility boundary is fixed before implementation:
+
+| Component | Responsibility | Must not do |
+|---|---|---|
+| Python Hook adapter | Normalize and forward Codex Hook events | Decide animation priority, timing, pending replacement, or return states |
+| Electron Main | Validate, deduplicate, and forward semantic events | Maintain a second user-visible state machine |
+| Renderer state controller | Own all visible-state arbitration | Allow another module to bypass its decision |
+| Renderer/DOM animation layer | Render the controller-selected animation | Select a next state or create a competing return timer |
+
+The controller owns `logicalState`, `visibleState`, `visibleSince`, `protectedUntil`, `pendingState`, and the mouse-idle deadline. It also owns priority arbitration, minimum-display protection, repeated-state merging, one-shot completion, latest-state recomputation, and sleep/wake decisions.
+
+The fixed v1.1.0 priority order is Attention 5, Happy 4, Working 3, Thinking 2, Idle 1, and Sleeping 0. No higher-priority Hook may interrupt an animation that is still protected. Priority only selects the one pending candidate that survives until protection ends.
+
+Thinking is protected for 2000 ms, Working for 1000 ms, Attention for 2000 ms, and Happy for 2000 ms. Attention and Happy are one-shot animations. Their timers begin when the Renderer controller applies the animation and records `visibleSince`, not when Python receives the Hook and not while the state is pending. The controller uses an absolute `protectedUntil` deadline so delayed JavaScript timers cannot shorten a hold.
+
+Repeated states are merged without resetting `visibleSince`. Only one pending state is retained; an equal- or higher-priority candidate replaces it and a lower-priority candidate is discarded. When a one-shot completes, the controller recomputes from `logicalState` instead of returning to a hardcoded state or replaying stale Hook history.
+
+Any valid Codex Hook wakes Sleeping immediately, applies the Hook's mapped state, and resets the local mouse-idle deadline. v1.1.0 does not add a startled-wake transition. `SessionEnd` updates the logical state to Idle and never directly triggers sleep.
+
+For v1.1.0, “actually visible” means that the Renderer controller has successfully applied the state to the animation element and recorded `visibleSince`. First-pixel decode or paint acknowledgement is deliberately excluded. Renderer reload may safely recover to Idle; persistent state restoration is deferred.
+
+Before implementation, reread this section and `AGENTS.md` and confirm the ownership boundary, priority table, protection times, and pending-state policy. If implementation would create another visible-state authority, stop and report the conflict rather than adding another patch.
 
 ## 6. Blueberry Event Protocol
 

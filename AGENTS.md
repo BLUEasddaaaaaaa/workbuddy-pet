@@ -25,6 +25,20 @@
 
 ## Fixed v1.1.0 pending-state policy
 
+### Fixed state priority
+
+| Priority | State |
+|---:|---|
+| 5 | `Attention` |
+| 4 | `Happy` |
+| 3 | `Working` |
+| 2 | `Thinking` |
+| 1 | `Idle` |
+| 0 | `Sleeping` |
+
+- A higher-priority Hook state must not interrupt an animation that is still inside its minimum protected display period.
+- Priority selects which single pending candidate survives; it does not grant an immediate-interruption right.
+
 - Keep at most one pending state. Never maintain a FIFO history of animations to replay.
 - If there is no pending state, store the newly eligible state as the pending candidate while the current animation is protected.
 - If a pending state already exists, replace it only when the new candidate has equal or higher priority. Discard a lower-priority candidate.
@@ -40,8 +54,8 @@
 | `UserPromptSubmit` | `Thinking` | 2000 ms | Keep Thinking visible for at least two seconds. |
 | `PreToolUse` | `Working` | 1000 ms | Keep Working visible for at least one second. |
 | `PostToolUse` | `Working` | No new hold | Do not restart or extend an unchanged Working animation. |
-| `PermissionRequest` | `Attention` | 3000 ms | Keep the approval cue visible for at least three seconds. |
-| `Stop` | `Happy` | 4000 ms | Keep the v1.1.0 completion celebration visible for at least four seconds. |
+| `PermissionRequest` | `Attention` | 2000 ms | Keep the approval cue visible for at least two seconds. |
+| `Stop` | `Happy` | 2000 ms | Keep the v1.1.0 completion celebration visible for at least two seconds. |
 | `SessionEnd` | `Idle` | 0 ms | Update the logical state to awake standby; any confirmed protected visual policy still applies. |
 | Local mouse inactivity | `Sleeping` | Trigger after 60000 ms idle | Sleep is driven by mouse inactivity, not SessionEnd. |
 | Local mouse movement after sleep | `Idle` | 0 ms | Wake immediately. |
@@ -50,13 +64,30 @@
 
 ## Fixed v1.1.0 one-shot and auto-return policy
 
-- `PermissionRequest -> Attention` is a one-shot visual. Once Attention has actually been visible for its confirmed 3000 ms protected duration, recompute and display the latest logical state.
-- `Stop -> Happy` is a one-shot visual. Once Happy has actually been visible for its confirmed 4000 ms protected duration, recompute and display the latest logical state.
+- `PermissionRequest -> Attention` is a one-shot visual. Once Attention has actually been visible for its confirmed 2000 ms protected duration, recompute and display the latest logical state.
+- `Stop -> Happy` is a one-shot visual. Once Happy has actually been visible for its confirmed 2000 ms protected duration, recompute and display the latest logical state.
+- Start a protection timer when the Renderer state controller applies the animation and records `visibleSince`, not when Python receives the Hook and not while the state is pending.
+- Use an absolute deadline (`protectedUntil = visibleSince + duration`) and recompute the remaining time when a timer fires; delayed JavaScript timers must never shorten the protection period.
 - Never hardcode the return target of either one-shot animation. Return to the latest logical state at completion time so an intervening Hook is respected and stale animation history is not replayed.
 - Idle, Thinking, Working, and Sleeping are persistent states for v1.1.0. They do not auto-return merely because a timer elapsed.
 - `PostToolUse` must not restart or extend an unchanged Working animation.
 - `SessionEnd` updates the logical state to Idle and does not directly trigger Sleeping. Sleeping remains controlled by the local 60000 ms mouse-inactivity rule.
-- These one-shot classifications and return rules are fixed for v1.1.0. State priority order is still unconfirmed and must be approved before implementation.
+- These one-shot classifications, return rules, and state priorities are fixed for v1.1.0.
+
+## Single visible-state authority for v1.1.0
+
+- Exactly one Renderer-side state controller has authority to choose Blueberry's user-visible animation.
+- Python only normalizes and forwards Codex Hook events. It must not decide priority, protection timing, pending replacement, or return targets.
+- Electron Main validates, deduplicates, and forwards semantic events. It must not maintain a second user-visible state machine.
+- The Renderer/DOM animation layer renders the controller's decision. It must not independently choose a next state or create a competing return timer.
+- The state controller owns `logicalState`, `visibleState`, `visibleSince`, `protectedUntil`, `pendingState`, and the mouse-idle deadline.
+- The state controller owns priority arbitration, minimum-display protection, repeated-state merging, one-shot completion, latest-state recomputation, and sleep/wake decisions.
+- Any valid Codex Hook received while `Sleeping` wakes Blueberry immediately and applies that Hook's mapped state. Reset the local mouse-idle deadline on this wake. A startled-wake transition is deferred to a later version.
+- `SessionEnd` updates the logical state to `Idle`; it does not mean task success and does not trigger sleep. If a protected one-shot is visible, finish its protection and then recompute the latest logical state.
+- Treat “actually visible” for v1.1.0 as the moment the Renderer controller successfully applies the new animation state and records `visibleSince`. Do not add first-pixel decode or paint acknowledgements.
+- Merge an unchanged state without resetting `visibleSince`. Keep only one priority-replaced pending state. On one-shot completion, resolve from `logicalState` rather than a hardcoded return target.
+- Renderer reload may safely fall back to `Idle` in v1.1.0; persistent runtime recovery is outside this MVP.
+- Before implementing or changing this controller, read this section and the current design document, then confirm ownership, priorities, protection timing, and pending-state behavior. If another module would gain visible-state authority, stop and report the responsibility conflict before editing code.
 
 ## Stop and ask when the product meaning is uncertain
 
