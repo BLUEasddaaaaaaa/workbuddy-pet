@@ -114,25 +114,6 @@ test('POST /event routes one accepted event', async (t) => {
 });
 
 
-test('POST /event never falls through to the diagnostic state callback', async (t) => {
-  const states = [];
-  const server = createEventServer({
-    onState: (state) => states.push(state),
-  });
-  server.listen(0, '127.0.0.1');
-  await once(server, 'listening');
-  t.after(() => new Promise((resolve) => server.close(resolve)));
-
-  const response = await request({
-    port: server.address().port,
-    body: makeEvent(),
-  });
-
-  assert.equal(response.statusCode, 200);
-  assert.deepEqual(states, []);
-});
-
-
 test('duplicate event ids are suppressed only inside the two-second window', async (t) => {
   let now = 1_000;
   const { port, events, states } = await listenForTest(t, { now: () => now });

@@ -75,7 +75,9 @@ function createEventServer({
   logger = console,
 } = {}) {
   const deliverState = typeof onState === 'function' ? onState : () => {};
-  const deliverEvent = typeof onEvent === 'function' ? onEvent : () => {};
+  const deliverEvent = typeof onEvent === 'function'
+    ? onEvent
+    : (event) => deliverState(event.state);
   const seenEvents = new Map();
 
   return http.createServer((req, res) => {
