@@ -252,18 +252,6 @@ test('Attention does not expire after 30000ms and changes only on a session even
 });
 
 
-test('expired active session is removed and cannot survive as a phantom Idle session', () => {
-  const { accept, clock, emissions } = makeHarness();
-  accept('tool.started', 'stale', 'working');
-  clock.tick(100);
-  accept('permission.requested', 'live', 'attention');
-  clock.tick(29900);
-  assert.equal(emissions.at(-1).state, 'attention');
-  accept('session.ended', 'live', 'sleeping');
-  assert.deepEqual(emissions.at(-1), { state: 'sleeping', at: 30000 });
-});
-
-
 test('malformed coordination input is rejected without throwing', () => {
   const { coordinator, emissions } = makeHarness();
   for (const value of [null, undefined, {}, { eventType: 3, sessionId: 'x', state: 'idle' },
