@@ -152,7 +152,11 @@ function routeEvent(event) {
   }
   return {
     ok: true,
-    state: EVENT_TO_STATE[event.event_type],
+    event: {
+      eventType: event.event_type,
+      sessionId: event.session_id,
+      state: EVENT_TO_STATE[event.event_type],
+    },
   };
 }
 

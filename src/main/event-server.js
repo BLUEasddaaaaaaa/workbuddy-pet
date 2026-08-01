@@ -67,6 +67,7 @@ function readJsonBody(req, res, maxBodyBytes, onPayload) {
 
 
 function createEventServer({
+  onEvent,
   onState,
   now = Date.now,
   dedupeWindowMs = DEDUPE_WINDOW_MS,
@@ -74,6 +75,9 @@ function createEventServer({
   logger = console,
 } = {}) {
   const deliverState = typeof onState === 'function' ? onState : () => {};
+  const deliverEvent = typeof onEvent === 'function'
+    ? onEvent
+    : (event) => deliverState(event.state);
   const seenEvents = new Map();
 
   return http.createServer((req, res) => {
@@ -152,7 +156,7 @@ function createEventServer({
       }
 
       try {
-        deliverState(routed.state);
+        deliverEvent(routed.event);
       } catch (error) {
         logger.error(`[blueberry] renderer state delivery failed: ${error.message}`);
         sendJson(res, 500, {
@@ -166,7 +170,7 @@ function createEventServer({
       sendJson(res, 200, {
         status: 'ok',
         event_id: payload.event_id,
-        state: routed.state,
+        state: routed.event.state,
       });
     });
   });
@@ -174,6 +178,7 @@ function createEventServer({
 
 
 function startEventServer({
+  onEvent,
   onState,
   host = DEFAULT_HOST,
   port = DEFAULT_PORT,
@@ -181,6 +186,7 @@ function startEventServer({
   ...serverOptions
 } = {}) {
   const server = createEventServer({
+    onEvent,
     onState,
     logger,
     ...serverOptions,
