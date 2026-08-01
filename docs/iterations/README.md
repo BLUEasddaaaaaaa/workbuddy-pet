@@ -1,15 +1,14 @@
-# WorkBuddy Iterations
+# Blueberry Iterations
 
 This directory records why each product iteration exists, what it changes, how it is validated, and what evidence determines the next decision.
 
 | Version | Product objective | Status | Record |
 |---|---|---|---|
 | v1.0.0 | Visualize CodeBuddy activity with a desktop pet | Completed baseline | Existing repository history and README |
-| v1.1.0 | Replace CodeBuddy Hooks with a safe Codex event path | Implementation complete; final acceptance pending | [v1.1.0 Codex Hooks](./v1.1.0-codex-hooks.md) |
-| v1.2.0 | Give permission and error conditions distinct visuals | Planned | Created when the iteration begins |
-| v1.3.0 | Add Apple Music awareness and headphones | Planned | Created when the iteration begins |
-| v1.4.0 | Add water and break reminders | Planned | Created when the iteration begins |
-| v1.5.0 | Add settings and complete the first user test | Planned | Created when the iteration begins |
+| v1.1.0 | Complete the minimum safe Codex-to-Blueberry reaction loop | Final acceptance in progress | [v1.1.0 Codex Hooks](./v1.1.0-codex-hooks.md) |
+| v1.2.0 | Differentiate tool activity, compaction, failures, and permission reminders | Planned | [v1.2.0 Product Roadmap](./v1.2.0-roadmap.md) |
+| v1.3.0 | Visualize multi-agent work with small Blueberry helpers | Planned | Created when the iteration begins |
+| v1.4.0+ | Add macOS awareness and wellbeing companion behavior | Planned | Created when the iteration begins |
 
 Each version record uses the following sections when applicable:
 

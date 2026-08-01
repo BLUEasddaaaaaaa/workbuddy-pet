@@ -1,20 +1,20 @@
-# WorkBuddy v1.1.0 Codex Hooks Design
+# Blueberry v1.1.0 Codex Hooks Design
 
 - **Status:** Approved for implementation planning
 - **Approved:** 2026-07-31
 - **Target platform:** Apple Silicon Mac, initially verified on macOS 26.5.2
-- **Baseline:** WorkBuddy v1.0.0 CodeBuddy integration
+- **Baseline:** Blueberry v1.0.0 CodeBuddy integration
 
 ## 1. Product Context
 
-WorkBuddy is an environment-aware desktop companion for people who use coding agents. It turns otherwise invisible agent activity into low-interruption visual feedback.
+Blueberry is an environment-aware desktop companion for people who use coding agents. It turns otherwise invisible agent activity into low-interruption visual feedback.
 
 The product is positioned as:
 
 - 70% user-facing AI product: status legibility, reduced attention switching, companionship, and eventually healthy-work reminders.
 - 30% technical product: lifecycle events, event normalization, reliability, privacy, graceful degradation, and future agent observability.
 
-WorkBuddy does not answer coding questions or replace Codex. It is the status-expression and companionship layer between Codex and the user.
+Blueberry does not answer coding questions or replace Codex. It is the status-expression and companionship layer between Codex and the user.
 
 ## 2. v1.1.0 Objective
 
@@ -35,9 +35,9 @@ The success of v1.1.0 is determined by the reliability and safety of this event 
 ## 3. Goals
 
 - Observe the core Codex lifecycle without changing Codex behavior.
-- Normalize Codex-specific payloads into a stable WorkBuddy event protocol.
+- Normalize Codex-specific payloads into a stable Blueberry event protocol.
 - Map normalized events to the existing six visual states.
-- Keep the Hook non-blocking when WorkBuddy is closed or unavailable.
+- Keep the Hook non-blocking when Blueberry is closed or unavailable.
 - Avoid transmitting or storing prompts, code, commands, file paths, transcripts, and tool output.
 - Add automated contract and routing tests.
 - Produce an Apple Silicon macOS build and a repeatable acceptance report.
@@ -101,7 +101,7 @@ workbuddy-pet/
 - Validate only the fields needed for event normalization.
 - Ignore unsupported events and excluded event variants.
 - Remove sensitive and unnecessary fields.
-- Create a WorkBuddy event.
+- Create a Blueberry event.
 - POST the event to `127.0.0.1:18920/event` with a 200 ms timeout and no retry.
 - Write exactly `{}` to stdout and exit with code `0`, including failure cases.
 
@@ -133,7 +133,7 @@ It must never block or rewrite a tool call, approve or deny a permission request
 - Receive only the mapped visual state in v1.1.0.
 - Avoid broad refactoring until the Codex event path is verified.
 
-## 6. WorkBuddy Event Protocol
+## 6. Blueberry Event Protocol
 
 ### 6.1 Envelope
 
@@ -185,7 +185,7 @@ session.ended
 
 ### 6.4 Privacy Boundary
 
-The WorkBuddy event must not contain:
+The Blueberry event must not contain:
 
 - `prompt`
 - `tool_input`
@@ -203,7 +203,7 @@ The allowlisted metadata for v1.1.0 is:
 - `session_source` for `session.started`
 - `tool_name` for tool and permission events
 
-WorkBuddy does not persist canonical events in v1.1.0.
+Blueberry does not persist canonical events in v1.1.0.
 
 ## 7. Hook Normalization and Visual Mapping
 
@@ -304,7 +304,7 @@ Retained for manual state testing and backward compatibility. The Codex adapter 
 
 | Condition | Required behavior |
 |---|---|
-| WorkBuddy is closed | Python exits normally; Codex is unaffected |
+| Blueberry is closed | Python exits normally; Codex is unaffected |
 | Loopback request times out | No retry; Python exits normally |
 | Hook input is malformed | No event is sent; Python exits normally |
 | Event is unknown | Server rejects it; renderer state does not change |
@@ -313,7 +313,7 @@ Retained for manual state testing and backward compatibility. The Codex adapter 
 | Port 18920 is occupied | Pet window remains available and logs a diagnostic |
 | Tool output represents failure | Remain `working`; error classification is deferred |
 
-The Hook integration is observational only. Failure of WorkBuddy must never become failure of Codex.
+The Hook integration is observational only. Failure of Blueberry must never become failure of Codex.
 
 ## 12. Test Strategy
 
@@ -363,12 +363,12 @@ Start a test HTTP server, run `codex_hook.py` with fixture JSON on stdin, captur
 
 ### 12.5 Degradation Tests
 
-- Run Hook fixtures with WorkBuddy closed.
+- Run Hook fixtures with Blueberry closed.
 - Stop the event server during a Hook call.
 - Send malformed and oversized JSON.
 - Send rapid state sequences.
 - Send duplicate completion events.
-- Occupy port 18920 before launching WorkBuddy.
+- Occupy port 18920 before launching Blueberry.
 
 ## 13. Acceptance Gates
 
@@ -380,10 +380,10 @@ v1.1.0 is complete only when:
 - The six Hook-targeted visual states remain functional; the pet-owned Reading behavior also remains unchanged.
 - Real Codex Thinking, Working, and Happy paths pass.
 - Permission behavior passes with a fixture and, when safely available, a real approval.
-- WorkBuddy being closed does not surface a Codex error.
+- Blueberry being closed does not surface a Codex error.
 - Event-to-visible-state latency is at most 500 ms across at least 20 trials.
-- Hook exit time while WorkBuddy is unavailable is at most 500 ms.
-- No private payload field reaches WorkBuddy events.
+- Hook exit time while Blueberry is unavailable is at most 500 ms.
+- No private payload field reaches Blueberry events.
 - No Hook blocks, rewrites, approves, denies, or continues Codex.
 - The arm64 macOS build succeeds and runs after installation.
 - README and iteration documentation are updated with actual evidence.

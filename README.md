@@ -1,4 +1,4 @@
-# WorkBuddy Pet 🐾
+# Blueberry Pet 🐾
 
 A low-interruption pixel desktop companion that turns Codex lifecycle events into ambient visual feedback. It shows whether Codex is thinking, using tools, waiting for permission, finished, or inactive without adding a second chat window.
 
@@ -65,7 +65,7 @@ npm start -- --scale=2
 
 ## 🔗 Codex Integration
 
-Codex launches a short-lived Python adapter for each configured lifecycle event. The adapter creates a privacy-filtered WorkBuddy event, sends it to `127.0.0.1:18920/event`, writes the neutral Hook result `{}`, and exits.
+Codex launches a short-lived Python adapter for each configured lifecycle event. The adapter creates a privacy-filtered Blueberry event, sends it to `127.0.0.1:18920/event`, writes the neutral Hook result `{}`, and exits.
 
 ### Hook Event Mapping
 
@@ -91,20 +91,20 @@ node --version
 
 Open [`hooks/codex-hooks.example.json`](hooks/codex-hooks.example.json), replace `/absolute/path/to/workbuddy-pet` with this repository's absolute path, and merge its `hooks` entries into `~/.codex/hooks.json`.
 
-Do not overwrite existing hooks: Codex runs all matching definitions. Restart Codex, open `/hooks`, review the source, and trust the exact WorkBuddy definition before testing it.
+Do not overwrite existing hooks: Codex runs all matching definitions. Restart Codex, open `/hooks`, review the source, and trust the exact Blueberry definition before testing it.
 
-To uninstall, remove only the WorkBuddy handlers from `~/.codex/hooks.json`. Leave unrelated hooks unchanged.
+To uninstall, remove only the Blueberry handlers from `~/.codex/hooks.json`. Leave unrelated hooks unchanged.
 
 ### Privacy and Failure Behavior
 
-WorkBuddy allowlists event identity, session/turn/tool-call IDs, session start source, and tool name. It does not send or persist prompts, commands, code, paths, transcripts, tool input/output, final messages, environment variables, or credentials.
+Blueberry allowlists event identity, session/turn/tool-call IDs, session start source, and tool name. It does not send or persist prompts, commands, code, paths, transcripts, tool input/output, final messages, environment variables, or credentials.
 
-If WorkBuddy is closed or the loopback request times out, the Hook exits normally without retrying. It never approves, denies, rewrites, blocks, or continues Codex.
+If Blueberry is closed or the loopback request times out, the Hook exits normally without retrying. It never approves, denies, rewrites, blocks, or continues Codex.
 
 ### Troubleshooting
 
-- **No reaction:** start WorkBuddy, verify port `18920`, then review trust state with `/hooks`.
-- **Port already in use:** close the other process or WorkBuddy instance; the pet window remains available and logs a diagnostic.
+- **No reaction:** start Blueberry, verify port `18920`, then review trust state with `/hooks`.
+- **Port already in use:** close the other process or Blueberry instance; the pet window remains available and logs a diagnostic.
 - **Python not found:** use an absolute Python 3 path in the Hook command.
 - **Hook changed:** review and trust the new definition again; Codex trust is tied to the current Hook hash.
 
@@ -133,7 +133,7 @@ Valid states: `idle`, `thinking`, `working`, `happy`, `sleeping`, `attention`
 
 ### POST /event
 
-Used by `codex_hook.py` for validated WorkBuddy protocol events. Manual animation checks should use `/state`.
+Used by `codex_hook.py` for validated Blueberry protocol events. Manual animation checks should use `/state`.
 
 ## 📦 Build
 
@@ -264,7 +264,7 @@ npm start -- --scale=2
 
 ## 🔗 Codex 联动
 
-Codex 在每个已配置的生命周期事件上启动一个短生命周期 Python 适配器。适配器生成经过隐私过滤的 WorkBuddy 事件，发送到 `127.0.0.1:18920/event`，向 Codex 输出中立结果 `{}` 后退出。
+Codex 在每个已配置的生命周期事件上启动一个短生命周期 Python 适配器。适配器生成经过隐私过滤的 Blueberry 事件，发送到 `127.0.0.1:18920/event`，向 Codex 输出中立结果 `{}` 后退出。
 
 ### Hook 事件映射
 
@@ -290,20 +290,20 @@ node --version
 
 打开 [`hooks/codex-hooks.example.json`](hooks/codex-hooks.example.json)，将 `/absolute/path/to/workbuddy-pet` 替换为仓库绝对路径，再把其中的 `hooks` 条目合并到 `~/.codex/hooks.json`。
 
-不要覆盖已有 Hook；Codex 会运行所有匹配的定义。重启 Codex 后打开 `/hooks`，审阅来源并信任当前 WorkBuddy 定义。
+不要覆盖已有 Hook；Codex 会运行所有匹配的定义。重启 Codex 后打开 `/hooks`，审阅来源并信任当前 Blueberry 定义。
 
-卸载时只删除 `~/.codex/hooks.json` 中 WorkBuddy 对应的 handler，不要删除其他 Hook。
+卸载时只删除 `~/.codex/hooks.json` 中 Blueberry 对应的 handler，不要删除其他 Hook。
 
 ### 隐私与降级
 
-WorkBuddy 只允许事件标识、session/turn/tool-call ID、会话开始来源和工具名称进入协议。它不发送或持久化提示词、命令、代码、路径、transcript、工具输入输出、最终消息、环境变量或凭证。
+Blueberry 只允许事件标识、session/turn/tool-call ID、会话开始来源和工具名称进入协议。它不发送或持久化提示词、命令、代码、路径、transcript、工具输入输出、最终消息、环境变量或凭证。
 
 桌宠关闭或回环请求超时时，Hook 会正常退出且不重试。它不会替用户批准、拒绝、重写、阻止或继续 Codex。
 
 ### 故障排查
 
-- **没有反应：** 启动 WorkBuddy，确认端口 `18920`，再通过 `/hooks` 检查信任状态。
-- **端口被占用：** 关闭其他 WorkBuddy 实例或占用进程；桌宠窗口仍会显示并记录诊断。
+- **没有反应：** 启动 Blueberry，确认端口 `18920`，再通过 `/hooks` 检查信任状态。
+- **端口被占用：** 关闭其他 Blueberry 实例或占用进程；桌宠窗口仍会显示并记录诊断。
 - **找不到 Python：** 在 Hook command 中使用 Python 3 的绝对路径。
 - **Hook 更新后失效：** 重新审阅并信任；Codex 的信任与当前 Hook hash 绑定。
 
@@ -332,7 +332,7 @@ curl -X POST http://127.0.0.1:18920/state \
 
 ### POST /event
 
-由 `codex_hook.py` 发送经过验证的 WorkBuddy 协议事件。手动测试动画请继续使用 `/state`。
+由 `codex_hook.py` 发送经过验证的 Blueberry 协议事件。手动测试动画请继续使用 `/state`。
 
 ## 📦 构建
 

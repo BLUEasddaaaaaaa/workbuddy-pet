@@ -1,10 +1,10 @@
-# WorkBuddy v1.1.0 Codex Hooks Implementation Plan
+# Blueberry v1.1.0 Codex Hooks Implementation Plan
 
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 
 **Goal:** 将现有 CodeBuddy 桌宠改造成能安全监听 Codex 生命周期事件的 Apple Silicon macOS MVP，同时复用已有动画和交互。
 
-**Architecture:** Codex 为每个 Hook 事件启动一个短生命周期 Python 进程。Python 仅抽取白名单字段，生成稳定的 WorkBuddy 事件并通过回环 HTTP 发送给 Electron；Electron 主进程验证、去重和路由事件，渲染进程继续负责已有动画、音效、睡眠与鼠标交互。
+**Architecture:** Codex 为每个 Hook 事件启动一个短生命周期 Python 进程。Python 仅抽取白名单字段，生成稳定的 Blueberry 事件并通过回环 HTTP 发送给 Electron；Electron 主进程验证、去重和路由事件，渲染进程继续负责已有动画、音效、睡眠与鼠标交互。
 
 **Tech Stack:** Electron 35、Node.js 内置 `node:test`、Python 3.10+ 标准库、Codex Hooks、loopback HTTP、electron-builder。
 
@@ -12,7 +12,7 @@
 
 ## 0. 实施原则与范围
 
-- 正式设计：[v1.1.0 Codex Hooks Design](../specs/2026-07-31-workbuddy-v1.1.0-codex-hooks-design.md)
+- 正式设计：[v1.1.0 Codex Hooks Design](../specs/2026-07-31-blueberry-v1.1.0-codex-hooks-design.md)
 - Codex Hook 契约：[OpenAI Codex Hooks 官方文档](https://learn.chatgpt.com/docs/hooks)
 - 本计划只交付 v1.1.0 的 Codex 事件闭环，不增加新动画、LLM、RAG、音乐监听或健康提醒。
 - Hook 始终输出 `{}`、退出码为 `0`，不返回审批、拒绝、重写或继续执行指令。
@@ -157,7 +157,7 @@ Expected: `ModuleNotFoundError` 或 `ImportError`，因为 `hooks/codex_hook.py`
 
 ```python
 def normalize_event(payload: object, now: datetime | None = None) -> dict | None:
-    """Return one privacy-filtered WorkBuddy event, or None when ignored."""
+    """Return one privacy-filtered Blueberry event, or None when ignored."""
 ```
 
 实现固定映射：
@@ -232,7 +232,7 @@ completed = subprocess.run(
     input=json.dumps(fixture),
     text=True,
     capture_output=True,
-    env={**os.environ, "WORKBUDDY_PORT": str(server.server_port)},
+    env={**os.environ, "BLUEBERRY_PORT": str(server.server_port)},
     timeout=1,
     check=False,
 )
@@ -269,7 +269,7 @@ Expected: 请求捕获断言失败，因为 HTTP 投递尚未实现。
 
 ```python
 PET_HOST = "127.0.0.1"
-PET_PORT = int(os.environ.get("WORKBUDDY_PORT", "18920"))
+PET_PORT = int(os.environ.get("BLUEBERRY_PORT", "18920"))
 POST_TIMEOUT_SECONDS = 0.2
 ```
 
@@ -437,7 +437,7 @@ Expected: 全部通过。
 
 ```bash
 git add src/main/event-router.js tests/js/event-router.test.js
-git commit -m "feat: route WorkBuddy events to pet states"
+git commit -m "feat: route Blueberry events to pet states"
 ```
 
 ## Task 4：建立可独立测试的回环事件服务器
@@ -503,7 +503,7 @@ createEventServer({
 - 每次请求清理超过两秒的旧 event ID，避免常驻内存增长。
 - 不设置 `Access-Control-Allow-Origin: *`。
 - `onState` 抛错时返回 `500` 并记录诊断，但不终止进程。
-- `EADDRINUSE` 只记录 `[workbuddy] port 18920 is already in use`。
+- `EADDRINUSE` 只记录 `[blueberry] port 18920 is already in use`。
 
 - [ ] **Step 4：运行全部 JavaScript 测试**
 
@@ -671,9 +671,9 @@ README 必须包含：
 - 把示例中的脚本路径替换为本机绝对路径。
 - 合并到 `~/.codex/hooks.json`，不要覆盖用户已有 Hook。
 - 使用 Codex `/hooks` 审阅并信任配置。
-- 卸载步骤：只删除 WorkBuddy 对应 handler。
+- 卸载步骤：只删除 Blueberry 对应 handler。
 - 隐私边界和不持久化说明。
-- WorkBuddy 关闭、端口占用、Hook 未信任的排查方式。
+- Blueberry 关闭、端口占用、Hook 未信任的排查方式。
 - `POST /event` 只供 Hook 使用，`POST /state` 供手动测试。
 
 - [ ] **Step 4：静态检查文档**
@@ -748,7 +748,7 @@ Expected: `dist/` 产生 arm64 macOS 应用和 DMG；本版不签名、不公证
 - [ ] **Step 5：检查产物架构**
 
 ```bash
-file "dist/mac-arm64/WorkBuddy Pet.app/Contents/MacOS/WorkBuddy Pet"
+file "dist/mac-arm64/Blueberry Pet.app/Contents/MacOS/Blueberry Pet"
 ```
 
 Expected: 输出包含 `Mach-O 64-bit executable arm64`。
@@ -757,7 +757,7 @@ Expected: 输出包含 `Mach-O 64-bit executable arm64`。
 
 ```bash
 git add package.json package-lock.json
-git commit -m "build: prepare WorkBuddy v1.1.0 for arm64 macOS"
+git commit -m "build: prepare Blueberry v1.1.0 for arm64 macOS"
 ```
 
 ## Task 8：真实 Codex 验收与证据归档
@@ -766,11 +766,11 @@ git commit -m "build: prepare WorkBuddy v1.1.0 for arm64 macOS"
 
 - Create: `docs/iterations/evidence/v1.1.0-acceptance.md`
 - Modify: `docs/iterations/v1.1.0-codex-hooks.md`
-- Modify: `../notes/workbuddy-interview-notes.md`
+- Modify: `../notes/blueberry-interview-notes.md`
 
 - [ ] **Step 1：安装本机 Hook 配置**
 
-先只读检查 `~/.codex/hooks.json`。若文件存在，合并 WorkBuddy handler；若不存在，从示例创建。命令中的脚本使用当前仓库的绝对路径：
+先只读检查 `~/.codex/hooks.json`。若文件存在，合并 Blueberry handler；若不存在，从示例创建。命令中的脚本使用当前仓库的绝对路径：
 
 ```text
 /Users/molan/Documents/Codex/2026-07-30/zhe-ge/outputs/workbuddy/workbuddy-pet/hooks/codex_hook.py
@@ -793,7 +793,7 @@ git commit -m "build: prepare WorkBuddy v1.1.0 for arm64 macOS"
 
 逐项验证：
 
-- WorkBuddy 关闭时运行 20 次 Hook，Codex 不显示 Hook 失败，单次退出小于 500 ms。
+- Blueberry 关闭时运行 20 次 Hook，Codex 不显示 Hook 失败，单次退出小于 500 ms。
 - 发送 malformed、unknown、oversized 和 duplicate event。
 - 占用 18920 后启动桌宠，窗口仍可用并输出清晰诊断。
 - 连续发送快速状态序列，不出现崩溃和完成音效重复。
@@ -819,7 +819,7 @@ git commit -m "build: prepare WorkBuddy v1.1.0 for arm64 macOS"
 
 - 将 `v1.1.0-codex-hooks.md` 状态改为 `Accepted`。
 - 写入实际 changes、evidence、known limitations、retrospective 和 next decision。
-- 在 `workbuddy-interview-notes.md` 增加“从需求到验收证据”的案例，区分设计成果与已验证成果。
+- 在 `blueberry-interview-notes.md` 增加“从需求到验收证据”的案例，区分设计成果与已验证成果。
 
 - [ ] **Step 6：最终验证**
 
@@ -835,7 +835,7 @@ Expected: 无非预期文件、无空白错误、测试全部通过。
 
 ```bash
 git add docs/iterations README.md
-git commit -m "docs: record WorkBuddy v1.1.0 acceptance"
+git commit -m "docs: record Blueberry v1.1.0 acceptance"
 ```
 
 个人求职笔记位于 Git 仓库外，不加入公开提交。
@@ -846,7 +846,7 @@ git commit -m "docs: record WorkBuddy v1.1.0 acceptance"
 
 - Python、JavaScript 和 Hook-to-HTTP 测试全部通过。
 - 七个语义事件正确驱动六种已有状态。
-- WorkBuddy 不可用时 Codex 不受影响。
+- Blueberry 不可用时 Codex 不受影响。
 - Hook 不改变工具、权限或 turn 行为。
 - 20 次可用/不可用路径均满足 500 ms 门槛。
 - canonical event 不含禁止的隐私字段。
