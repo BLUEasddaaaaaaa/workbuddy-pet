@@ -256,8 +256,10 @@ test('renderer Idle acknowledgement allows repeated Attention in the same sessio
   const { accept, clock, coordinator, emissions } = makeHarness();
   accept('permission.requested', 'one', 'attention');
   clock.tick(6000);
+  assert.equal(clock.timerCount(), 0);
   assert.deepEqual(coordinator.observeVisualState('idle'), { ok: true });
   assert.deepEqual(emissions, [{ state: 'attention', at: 0 }]);
+  assert.equal(clock.timerCount(), 0);
   accept('permission.requested', 'one', 'attention');
   assert.deepEqual(emissions, [
     { state: 'attention', at: 0 },
@@ -279,15 +281,20 @@ test('same-state visual acknowledgement does not restart the display hold', () =
 });
 
 
-test('visual acknowledgement never emits or recomputes session state', () => {
+test('visual acknowledgement preserves a pending canonical transition and its original deadline', () => {
   const { accept, clock, coordinator, emissions } = makeHarness();
   accept('turn.finished', 'one', 'happy');
   clock.tick(100);
   accept('tool.started', 'one', 'working');
   assert.equal(clock.timerCount(), 2);
+  clock.tick(2800);
   assert.deepEqual(coordinator.observeVisualState('idle'), { ok: true });
   assert.deepEqual(emissions, [{ state: 'happy', at: 0 }]);
-  assert.equal(clock.timerCount(), 1);
+  assert.equal(clock.timerCount(), 2);
+  clock.tick(99);
+  assert.equal(emissions.length, 1);
+  clock.tick(1);
+  assert.deepEqual(emissions.at(-1), { state: 'working', at: 3000 });
 });
 
 

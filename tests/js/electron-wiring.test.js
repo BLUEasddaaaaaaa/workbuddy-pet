@@ -148,11 +148,17 @@ test('renderer loads external state policy before renderer code', () => {
 test('renderer rejects duplicate external state before transition side effects', () => {
   const source = read('src/renderer/renderer.js');
   const functionStart = source.indexOf('function triggerExternalState(state) {');
-  const functionEnd = source.indexOf('\n  }', functionStart);
+  const functionEnd = source.indexOf('\n  function updateTargets()', functionStart);
   const body = source.slice(functionStart, functionEnd);
 
   assert.match(source, /BlueberryExternalStatePolicy\.createExternalStatePolicy\(\)/);
   assert.match(body, /function triggerExternalState\(state\) \{\s*if \(!externalStatePolicy\.shouldApply\(state\)\) return;/);
+  assert.match(body, /if \(state !== 'happy' && happyTimer\) \{\s*clearTimeout\(happyTimer\);\s*happyTimer = null;\s*\}/);
+  const dedupe = body.indexOf('shouldApply(state)');
+  const cancelHappy = body.indexOf('clearTimeout(happyTimer)');
+  assert.ok(dedupe < cancelHappy);
+  assert.ok(cancelHappy < body.indexOf('completionStatePolicy.onActivity()'));
+  assert.ok(cancelHappy < body.indexOf('switch (state)'));
   assert.ok(body.indexOf('shouldApply(state)') < body.indexOf('completionStatePolicy.onActivity()'));
   assert.ok(body.indexOf('shouldApply(state)') < body.indexOf('switch (state)'));
 });
@@ -185,8 +191,7 @@ test('renderer synchronizes external policy after local visual transitions', () 
   assert.match(triggerHappy, /petContainer\.classList\.add\('happy'\);[\s\S]*commitVisualState\('happy'\);/);
   assert.match(triggerWorking, /petContainer\.classList\.add\('working'\);[\s\S]*commitVisualState\('working'\);/);
   assert.doesNotMatch(triggerAttention, /if \(happyTimer\) return/);
-  assert.match(triggerAttention, /if \(happyTimer\) \{ clearTimeout\(happyTimer\); happyTimer = null; \}/);
-  assert.ok(triggerAttention.indexOf('clearTimeout(happyTimer)') < triggerAttention.indexOf("petContainer.classList.add('attention')"));
+  assert.doesNotMatch(triggerAttention, /clearTimeout\(happyTimer\)/);
   assert.match(triggerAttention, /petContainer\.classList\.add\('attention'\);[\s\S]*commitVisualState\('attention'\);/);
   assert.match(triggerExternalState, /setPetState\('thinking'\);/);
   assert.doesNotMatch(triggerExternalState, /markVisualState\('thinking'\)/);
