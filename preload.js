@@ -7,7 +7,6 @@ contextBridge.exposeInMainWorld('petAPI', {
   scale: scale,
   moveWindow: (dx, dy) => ipcRenderer.send('move-window', dx, dy),
   dragEnd: () => ipcRenderer.send('drag-end'),
-  reportVisualState: (state) => ipcRenderer.send('visual-state-changed', state),
   onMousePosition: (callback) => {
     ipcRenderer.on('mouse-position', (_event, pos) => callback(pos));
   },
