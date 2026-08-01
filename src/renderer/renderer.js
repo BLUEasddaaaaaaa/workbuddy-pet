@@ -216,6 +216,7 @@
   var thinkImg = $('think-img');
   var workImg  = $('work-img');
   var attentionImg = $('attention-img');
+  var completionStatePolicy = window.BlueberryCompletionStatePolicy.createCompletionStatePolicy();
   var happyImg = $('happy-img');
   var petShadow = $('pet-shadow');
 
@@ -361,6 +362,7 @@
 
   function triggerHappy() {
     if (happyTimer) { clearTimeout(happyTimer); happyTimer = null; }
+    completionStatePolicy.onHappyStarted();
     clearTransientTimers();
     if (isSleeping) wakeUp();
 
@@ -379,7 +381,11 @@
 
     happyTimer = setTimeout(function () {
       happyTimer = null;
-      restoreIdle();
+      if (completionStatePolicy.onHappyFinished() === 'sleeping') {
+        enterSleep();
+      } else {
+        restoreIdle();
+      }
     }, 3000);
   }
 
@@ -457,6 +463,10 @@
   // 语义事件映射由主进程 event-router.js 维护，renderer 只接收视觉状态。
 
   function triggerExternalState(state) {
+    if (state !== 'happy' && state !== 'sleeping') {
+      completionStatePolicy.onActivity();
+    }
+
     switch (state) {
       case 'happy':
         triggerHappy();
@@ -475,7 +485,7 @@
         setPetState('thinking');
         break;
       case 'sleeping':
-        if (happyTimer) return;
+        if (completionStatePolicy.onSleepRequested(Boolean(happyTimer)) === 'deferred') return;
         if (!isSleeping) enterSleep();
         break;
       case 'idle':
