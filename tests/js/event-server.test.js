@@ -61,10 +61,8 @@ function request({ port, path = '/event', method = 'POST', body = '' }) {
 
 
 async function listenForTest(t, options = {}) {
-  const events = [];
   const states = [];
   const server = createEventServer({
-    onEvent: (event) => events.push(event),
     onState: (state) => states.push(state),
     ...options,
   });
@@ -74,14 +72,13 @@ async function listenForTest(t, options = {}) {
   return {
     port: server.address().port,
     server,
-    events,
     states,
   };
 }
 
 
 test('POST /event routes one accepted event', async (t) => {
-  const { port, events, states } = await listenForTest(t);
+  const { port, states } = await listenForTest(t);
 
   const response = await request({ port, body: makeEvent() });
 
@@ -91,32 +88,14 @@ test('POST /event routes one accepted event', async (t) => {
     event_id: 'evt_1234567890abcdef',
     state: 'working',
   });
-  assert.deepEqual(events, [{
-    eventType: 'tool.started',
-    sessionId: 'thr_test',
-    state: 'working',
-  }]);
-  assert.deepEqual(Object.keys(events[0]).sort(), ['eventType', 'sessionId', 'state']);
-  for (const privateField of [
-    'metadata',
-    'turn_id',
-    'tool_use_id',
-    'prompt',
-    'command',
-    'path',
-    'input',
-    'output',
-  ]) {
-    assert.equal(Object.hasOwn(events[0], privateField), false);
-  }
-  assert.deepEqual(states, []);
+  assert.deepEqual(states, ['working']);
   assert.equal(response.headers['access-control-allow-origin'], undefined);
 });
 
 
 test('duplicate event ids are suppressed only inside the two-second window', async (t) => {
   let now = 1_000;
-  const { port, events, states } = await listenForTest(t, { now: () => now });
+  const { port, states } = await listenForTest(t, { now: () => now });
   const event = makeEvent();
 
   const first = await request({ port, body: event });
@@ -131,17 +110,12 @@ test('duplicate event ids are suppressed only inside the two-second window', asy
     reason: 'duplicate_event',
   });
   assert.equal(later.body.status, 'ok');
-  assert.equal(events.length, 2);
-  assert.deepEqual(events, [
-    { eventType: 'tool.started', sessionId: 'thr_test', state: 'working' },
-    { eventType: 'tool.started', sessionId: 'thr_test', state: 'working' },
-  ]);
-  assert.deepEqual(states, []);
+  assert.deepEqual(states, ['working', 'working']);
 });
 
 
 test('POST /state remains available for manual animation checks', async (t) => {
-  const { port, events, states } = await listenForTest(t);
+  const { port, states } = await listenForTest(t);
 
   const response = await request({
     port,
@@ -151,13 +125,12 @@ test('POST /state remains available for manual animation checks', async (t) => {
 
   assert.equal(response.statusCode, 200);
   assert.deepEqual(response.body, { status: 'ok', state: 'attention' });
-  assert.deepEqual(events, []);
   assert.deepEqual(states, ['attention']);
 });
 
 
 test('HTTP boundary rejects malformed, unknown, and oversized requests', async (t) => {
-  const { port, events, states } = await listenForTest(t);
+  const { port, states } = await listenForTest(t);
   const cases = [
     {
       name: 'invalid json',
@@ -197,7 +170,6 @@ test('HTTP boundary rejects malformed, unknown, and oversized requests', async (
       assert.equal(response.statusCode, entry.statusCode);
     });
   }
-  assert.deepEqual(events, []);
   assert.deepEqual(states, []);
 });
 
@@ -210,7 +182,6 @@ test('occupied port logs a diagnostic without an unhandled error', async (t) => 
 
   const messages = [];
   const candidate = startEventServer({
-    onEvent: () => {},
     onState: () => {},
     port: blocker.address().port,
     logger: {

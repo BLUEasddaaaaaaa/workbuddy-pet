@@ -64,14 +64,7 @@ test('supported semantic events map to existing pet states', async (t) => {
     await t.test(eventType, () => {
       assert.deepEqual(
         routeEvent(makeEvent(eventType)),
-        {
-          ok: true,
-          event: {
-            eventType,
-            sessionId: 'thr_test',
-            state: expectedState,
-          },
-        },
+        { ok: true, state: expectedState },
       );
     });
   }
