@@ -30,7 +30,23 @@
 - If a pending state already exists, replace it only when the new candidate has equal or higher priority. Discard a lower-priority candidate.
 - Merge repeated occurrences of the same state; they must not restart the current animation or create another pending entry.
 - When a persistent state's protection period ends, resolve from the latest confirmed logical state rather than blindly replaying the historical pending event.
-- One-shot animation return behavior and all minimum-display and auto-return durations remain unconfirmed until the user approves the state table. Do not invent or change those values during implementation.
+- One-shot animation return behavior and all auto-return durations remain unconfirmed until the user approves the state table. Do not invent or change those values during implementation.
+
+## Fixed v1.1.0 minimum-display timing
+
+| Trigger or local condition | State | Minimum protected display | Additional rule |
+|---|---|---:|---|
+| `SessionStart` | `Idle` | 0 ms | Enter awake standby immediately. |
+| `UserPromptSubmit` | `Thinking` | 2000 ms | Keep Thinking visible for at least two seconds. |
+| `PreToolUse` | `Working` | 1000 ms | Keep Working visible for at least one second. |
+| `PostToolUse` | `Working` | No new hold | Do not restart or extend an unchanged Working animation. |
+| `PermissionRequest` | `Attention` | 3000 ms | Keep the approval cue visible for at least three seconds. |
+| `Stop` | `Happy` | 4000 ms | Keep the v1.1.0 completion celebration visible for at least four seconds. |
+| `SessionEnd` | `Idle` | 0 ms | Update the logical state to awake standby; any confirmed protected visual policy still applies. |
+| Local mouse inactivity | `Sleeping` | Trigger after 60000 ms idle | Sleep is driven by mouse inactivity, not SessionEnd. |
+| Local mouse movement after sleep | `Idle` | 0 ms | Wake immediately. |
+
+- These minimum-display values are fixed for v1.1.0. Auto-return destinations and one-shot classifications are intentionally not fixed here yet.
 
 ## Stop and ask when the product meaning is uncertain
 
