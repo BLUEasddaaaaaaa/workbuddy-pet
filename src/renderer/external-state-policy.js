@@ -18,6 +18,10 @@
         return true;
       },
 
+      markVisualState(state) {
+        currentState = state;
+      },
+
       current() {
         return currentState;
       },

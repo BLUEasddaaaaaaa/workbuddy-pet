@@ -172,6 +172,7 @@
 
     // 添加睡眠呼吸脉动动画
     petContainer.classList.add('sleeping');
+    externalStatePolicy.markVisualState('sleeping');
   }
 
   function wakeUp() {
@@ -195,6 +196,7 @@
 
     // 重置空闲计时
     lastMouseMoveTime = performance.now();
+    externalStatePolicy.markVisualState('idle');
   }
 
   // ========== 待机随机动作系统（read 5% / think 3%） ==========
@@ -357,6 +359,7 @@
     svgEl.style.display = '';
     idleActionActive = false;
     lastMouseMoveTime = performance.now();
+    externalStatePolicy.markVisualState('idle');
   }
 
   // ========== 开心状态（外部触发，任务完成） ==========
@@ -377,6 +380,7 @@
 
     petContainer.classList.add('happy');
     petShadow.style.display = 'block';
+    externalStatePolicy.markVisualState('happy');
 
     playCompletionSound();
 
@@ -425,6 +429,7 @@
 
     petContainer.classList.add('working');
     petShadow.style.display = 'block';
+    externalStatePolicy.markVisualState('working');
 
     workingTimer = setTimeout(function () {
       workingTimer = null;
@@ -452,6 +457,7 @@
 
     petContainer.classList.add('attention');
     petShadow.style.display = 'block';
+    externalStatePolicy.markVisualState('attention');
 
     attentionTimer = setTimeout(function () {
       attentionTimer = null;
@@ -485,6 +491,7 @@
         if (isSleeping) wakeUp();
         idleActionActive = false;   // 允许 setPetState 进入
         setPetState('thinking');
+        externalStatePolicy.markVisualState('thinking');
         break;
       case 'sleeping':
         if (completionStatePolicy.onSleepRequested(Boolean(happyTimer)) === 'deferred') return;
