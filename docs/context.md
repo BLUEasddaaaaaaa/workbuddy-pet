@@ -30,3 +30,19 @@ This file contains user-confirmed continuity information. Agents must follow the
 
 - Complete the recoverable rollback and verify the stable baseline.
 - Discuss a smaller v1.1.0 state design before writing replacement implementation code.
+
+## 2026-08-02: v1.1.0 Single-Conversation Animation Rules
+
+### Superseding decision
+
+- The earlier blanket statement that Codex `Stop` must not trigger Happy is superseded for v1.1.0 only. The user explicitly approved `Stop -> Happy` as a temporary MVP mapping; v1.2.0 must revisit completion reliability.
+
+### Confirmed behavior
+
+- v1.1.0 considers one Codex conversation only.
+- `SessionStart -> Idle`, `UserPromptSubmit -> Thinking`, `PreToolUse/PostToolUse -> Working`, `PermissionRequest -> Attention`, `Stop -> Happy`, and `SessionEnd -> Idle`.
+- Sleeping is triggered after 60000 ms of local mouse inactivity, not by `SessionEnd`; mouse movement wakes Blueberry to Idle.
+- Minimum protected display times are Thinking 2000 ms, Working 1000 ms, Attention 3000 ms, and Happy 4000 ms. `PostToolUse` does not restart an unchanged Working animation.
+- Attention and Happy are one-shot visuals. After their protected display completes, Blueberry recomputes and displays the latest logical state instead of returning to a hardcoded state.
+- The scheduler keeps at most one pending state. An equal- or higher-priority candidate replaces the pending state, a lower-priority candidate is discarded, and repeated states are merged.
+- The exact state-priority order remains unconfirmed and must be approved before implementation.

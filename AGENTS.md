@@ -3,7 +3,7 @@
 ## Product semantics before animation mapping
 
 - Do not treat a technical lifecycle event as a user-visible success signal without verifying its official meaning.
-- Codex `Stop` means that a turn stopped; it does not prove that the user's task succeeded. Never map `Stop` directly to a completion celebration unless a separately approved product rule supplies reliable success evidence.
+- Codex `Stop` means that a turn stopped; it does not prove that the user's task succeeded. Do not normally map `Stop` directly to a completion celebration. The fixed v1.1.0 mapping below is an explicit, temporary user-approved exception: v1.1.0 shows Happy for Stop, and v1.2.0 must revisit completion reliability.
 - `SessionEnd` means that the main session ended; it does not prove task success.
 - When an event is ambiguous, prefer a neutral visual state over a positive or negative judgment.
 
@@ -30,7 +30,7 @@
 - If a pending state already exists, replace it only when the new candidate has equal or higher priority. Discard a lower-priority candidate.
 - Merge repeated occurrences of the same state; they must not restart the current animation or create another pending entry.
 - When a persistent state's protection period ends, resolve from the latest confirmed logical state rather than blindly replaying the historical pending event.
-- One-shot animation return behavior and all auto-return durations remain unconfirmed until the user approves the state table. Do not invent or change those values during implementation.
+- Apply the fixed one-shot and auto-return policy below. Do not invent additional one-shot states, return targets, or durations during implementation.
 
 ## Fixed v1.1.0 minimum-display timing
 
@@ -46,7 +46,17 @@
 | Local mouse inactivity | `Sleeping` | Trigger after 60000 ms idle | Sleep is driven by mouse inactivity, not SessionEnd. |
 | Local mouse movement after sleep | `Idle` | 0 ms | Wake immediately. |
 
-- These minimum-display values are fixed for v1.1.0. Auto-return destinations and one-shot classifications are intentionally not fixed here yet.
+- These minimum-display values are fixed for v1.1.0. The confirmed one-shot and auto-return rules are defined immediately below.
+
+## Fixed v1.1.0 one-shot and auto-return policy
+
+- `PermissionRequest -> Attention` is a one-shot visual. Once Attention has actually been visible for its confirmed 3000 ms protected duration, recompute and display the latest logical state.
+- `Stop -> Happy` is a one-shot visual. Once Happy has actually been visible for its confirmed 4000 ms protected duration, recompute and display the latest logical state.
+- Never hardcode the return target of either one-shot animation. Return to the latest logical state at completion time so an intervening Hook is respected and stale animation history is not replayed.
+- Idle, Thinking, Working, and Sleeping are persistent states for v1.1.0. They do not auto-return merely because a timer elapsed.
+- `PostToolUse` must not restart or extend an unchanged Working animation.
+- `SessionEnd` updates the logical state to Idle and does not directly trigger Sleeping. Sleeping remains controlled by the local 60000 ms mouse-inactivity rule.
+- These one-shot classifications and return rules are fixed for v1.1.0. State priority order is still unconfirmed and must be approved before implementation.
 
 ## Stop and ask when the product meaning is uncertain
 
@@ -69,7 +79,7 @@
 - A successful HTTP response proves event acceptance, not visible animation success.
 - Verify installed macOS builds against the exact worktree by byte-comparing critical `app.asar` files before and after installation.
 - Prefer deterministic tests and CDP renderer inspection for animation state. Computer Use can generate Codex Tool Hooks and must not be the sole evidence for concurrent-state behavior.
-- Do not call v1.1.0 complete or release-ready while a required automated, installed-runtime, multi-session, or package-identity gate is failing.
+- Do not call v1.1.0 complete or release-ready while a required automated, installed-runtime, single-conversation, or package-identity gate is failing. Multi-session behavior is outside the confirmed v1.1.0 scope.
 
 ## Context continuity
 
