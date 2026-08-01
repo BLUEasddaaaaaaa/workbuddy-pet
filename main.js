@@ -1,6 +1,7 @@
 const { app, BrowserWindow, screen, ipcMain } = require('electron');
 const path = require('path');
 const { startEventServer } = require('./src/main/event-server');
+const { createStateCoordinator } = require('./src/main/state-coordinator');
 
 // ========== 缩放参数 ==========
 // 用法: npm start -- --scale=2  (2x 大小 = 512x512)
@@ -63,6 +64,7 @@ ipcMain.on('drag-end', () => {
 
 // ========== 本地事件服务（Codex Hook → Blueberry 事件 → 宠物状态） ==========
 let httpServer = null;
+let stateCoordinator = null;
 
 function sendStateToRenderer(state) {
   if (!mainWindow || mainWindow.isDestroyed()) return;
@@ -70,10 +72,28 @@ function sendStateToRenderer(state) {
 }
 
 function startHttpTrigger() {
+  if (httpServer) return;
+  if (!stateCoordinator) {
+    stateCoordinator = createStateCoordinator({
+      emitState: sendStateToRenderer,
+    });
+  }
   httpServer = startEventServer({
+    onEvent: (event) => stateCoordinator.accept(event),
     onState: sendStateToRenderer,
     logger: console,
   });
+}
+
+function stopAppServices() {
+  if (stateCoordinator) {
+    stateCoordinator.dispose();
+    stateCoordinator = null;
+  }
+  if (httpServer) {
+    if (httpServer.listening) httpServer.close();
+    httpServer = null;
+  }
 }
 
 // ========== 全局鼠标位置轮询（推送到渲染进程，实现大范围眼睛跟随） ==========
@@ -103,8 +123,12 @@ app.whenReady().then(() => {
 });
 
 app.on('window-all-closed', () => {
-  if (httpServer && httpServer.listening) httpServer.close();
+  stopAppServices();
   app.quit();
+});
+
+app.on('before-quit', () => {
+  stopAppServices();
 });
 
 app.on('activate', () => {
