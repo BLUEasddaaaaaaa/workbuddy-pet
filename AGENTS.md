@@ -96,6 +96,24 @@
 - Stop and ask the user when the same area exposes repeated architecture conflicts, when three attempted fixes fail, or when the next fix would add a new authority/state source instead of resolving the existing one.
 - Preserve the failing test, reproduction steps, logs, and current Git state while waiting for direction. Do not hide, weaken, or rewrite an acceptance requirement to obtain a pass.
 
+## Subagent implementation and review protocol
+
+- Use subagents only when the user has explicitly approved subagent execution. Explaining or planning a subagent workflow does not itself authorize dispatch.
+- Execute state-controller work sequentially. Do not run multiple implementation subagents in parallel against shared state, Renderer, routing, or test files.
+- Assign a fresh implementation subagent to each bounded task. Provide the task text, allowed files, prohibited files, relevant product rules, exact test commands, expected evidence, and mandatory stop conditions directly; do not ask it to infer scope from the full conversation.
+- Every implementation subagent must use test-driven development: add a focused failing test, prove that it fails for the intended missing behavior, implement the smallest change, rerun focused and relevant regression tests, self-review the diff, and commit only its authorized scope.
+- Require each implementation subagent to report its status as `DONE`, `DONE_WITH_CONCERNS`, `NEEDS_CONTEXT`, or `BLOCKED`, together with changed files, before/after test evidence, test counts, commit hash, and unresolved concerns.
+- After implementation, dispatch an independent specification reviewer before any code-quality review. The specification reviewer checks exact product semantics, priority, protection timing, pending-state policy, single-controller ownership, scope exclusions, and missing or extra behavior.
+- A task with any open specification issue is incomplete. Return it to the original implementer for a focused correction, then obtain a fresh specification re-review.
+- Only after specification approval, dispatch an independent code-quality reviewer. This reviewer checks state-authority duplication, timer ownership and cleanup, stale replay, repeated-state restart, test quality, unnecessary complexity, unauthorized refactoring, and maintainability.
+- A task with any open code-quality issue is incomplete. Return it to the original implementer for correction and require code-quality re-review.
+- The primary agent must independently inspect `git status`, `git diff`, `git diff --check`, changed-file scope, commit identity, and the actual test output. Never accept a subagent's verbal claim as sufficient evidence.
+- Preserve TDD evidence where practical: the pre-implementation failure must be caused by the missing required behavior, and the post-implementation pass must run the same focused test.
+- After all tasks pass their two-stage reviews, dispatch a fresh final reviewer for the complete diff and rerun the full automated and runtime acceptance gates from the primary task.
+- HTTP 200, a passing unit test, a screenshot, a subagent report, or a single successful runtime sequence proves only its own layer. Do not substitute one evidence type for another.
+- If a subagent returns `NEEDS_CONTEXT`, provide the missing confirmed context before redispatch. If it returns `BLOCKED`, assess whether the task, reasoning level, or plan is wrong; never repeat the same attempt without changing the blocking condition.
+- Apply the existing mandatory user-confirmation stop to subagent work. After the first well-evidenced implementation still fails, an architecture conflict appears, or a product rule becomes ambiguous, preserve evidence and stop all downstream implementation, review, acceptance, build, install, and publication work until the user confirms the next action.
+
 ## Mandatory user-confirmation stop
 
 - When a requested change is not working after the first well-evidenced fix attempt, stop. Report the remaining failure and ask the user before attempting another fix.
