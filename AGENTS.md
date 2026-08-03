@@ -1,140 +1,28 @@
-# Blueberry Project Rules
+# Blueberry Agent Rules Index
 
-## Product semantics before animation mapping
+本文件只保存所有任务都必须遵守的底线和专题规则入口。不要默认读取整个 `docs/agent-rules/`；只读取当前任务对应的文件。
 
-- Do not treat a technical lifecycle event as a user-visible success signal without verifying its official meaning.
-- Codex `Stop` means that a turn stopped; it does not prove that the user's task succeeded. Do not normally map `Stop` directly to a completion celebration. The fixed v1.1.0 mapping below is an explicit, temporary user-approved exception: v1.1.0 shows Happy for Stop, and v1.2.0 must revisit completion reliability.
-- `SessionEnd` means that the main session ended; it does not prove task success.
-- When an event is ambiguous, prefer a neutral visual state over a positive or negative judgment.
+## 全局底线
 
-## Fixed v1.1.0 Codex-to-Blueberry mapping
+- 不得擅自改变产品语义、验收标准、隐私边界或动画含义；存在歧义时停止并询问用户。
+- 第一次有充分证据的修复仍失败，或者出现新的状态权威/架构冲突时，保存证据并停止，不得连续堆补丁。
+- 已知必需行为失败或尚未验证时，不得声称版本完成、通过验收或可以发布。
+- 不得触碰用户自有且未跟踪的 `.superpowers/` 目录。
+- 不得把一次 HTTP 200、单元测试、截图、子 Agent 报告或单轮运行结果替代为其他层级的证据。
+- 触发停止条件后，未经用户明确确认，不得继续生产代码修改、下游测试、构建、安装、发布或重新派发子 Agent。
 
-- Keep the following mapping unchanged throughout v1.1.0. Revisit richer or more precise animation behavior only in a later explicitly approved iteration.
+## 按任务读取规则
 
-| Codex or local condition | Blueberry state | v1.1.0 behavior |
-|---|---|---|
-| `SessionStart` | `Idle` | The Codex conversation is active and Blueberry remains awake in standby. |
-| `UserPromptSubmit` | `Thinking` | Codex received the user's task. |
-| `PreToolUse` | `Working` | Codex started using a tool. |
-| `PostToolUse` | `Working` | Codex finished one tool operation but may continue working; do not restart an unchanged Working animation. |
-| `PermissionRequest` | `Attention` | The user needs to review an approval request. |
-| `Stop` | `Happy` | For v1.1.0 only, treat Stop as the turn-completion celebration. Revisit completion reliability in v1.2.0. |
-| `SessionEnd` | `Idle` | End Codex activity and return to awake standby; do not trigger sleep. |
-| Local mouse inactivity timeout | `Sleeping` | Sleeping is driven by local mouse inactivity, not by a Codex Hook. |
-| Local mouse movement after sleep | `Idle` | Wake Blueberry and return to awake standby. |
+| 当前任务涉及 | 开始操作前必须读取 |
+|---|---|
+| 上下文压缩、恢复旧任务、关键定义查询或修改 `docs/context.md` | `docs/agent-rules/context-continuity.md` |
+| Codex Hook 含义、事件映射、动画产品语义 | `docs/agent-rules/product-semantics.md` |
+| 状态、优先级、保护时间、pending、一次性动画、睡眠或 Renderer 状态权威 | `docs/agent-rules/state-controller-v1.1.0.md` |
+| 派发、实现、审查或验收子 Agent | `docs/agent-rules/subagent-workflow.md` |
+| 编写/修改测试、运行验收、判断证据或声称通过 | `docs/agent-rules/testing-and-acceptance.md` |
+| 构建、安装、替换 `/Applications/Blueberry.app`、打包或发布 | `docs/agent-rules/release-and-packaging.md` |
 
-## Fixed v1.1.0 pending-state policy
-
-### Fixed state priority
-
-| Priority | State |
-|---:|---|
-| 5 | `Attention` |
-| 4 | `Happy` |
-| 3 | `Working` |
-| 2 | `Thinking` |
-| 1 | `Idle` |
-| 0 | `Sleeping` |
-
-- A higher-priority Hook state must not interrupt an animation that is still inside its minimum protected display period.
-- Priority selects which single pending candidate survives; it does not grant an immediate-interruption right.
-
-- Keep at most one pending state. Never maintain a FIFO history of animations to replay.
-- If there is no pending state, store the newly eligible state as the pending candidate while the current animation is protected.
-- If a pending state already exists, replace it only when the new candidate has equal or higher priority. Discard a lower-priority candidate.
-- Merge repeated occurrences of the same state; they must not restart the current animation or create another pending entry.
-- When a persistent state's protection period ends, resolve from the latest confirmed logical state rather than blindly replaying the historical pending event.
-- Apply the fixed one-shot and auto-return policy below. Do not invent additional one-shot states, return targets, or durations during implementation.
-
-## Fixed v1.1.0 minimum-display timing
-
-| Trigger or local condition | State | Minimum protected display | Additional rule |
-|---|---|---:|---|
-| `SessionStart` | `Idle` | 0 ms | Enter awake standby immediately. |
-| `UserPromptSubmit` | `Thinking` | 2000 ms | Keep Thinking visible for at least two seconds. |
-| `PreToolUse` | `Working` | 1000 ms | Keep Working visible for at least one second. |
-| `PostToolUse` | `Working` | No new hold | Do not restart or extend an unchanged Working animation. |
-| `PermissionRequest` | `Attention` | 2000 ms | Keep the approval cue visible for at least two seconds. |
-| `Stop` | `Happy` | 2000 ms | Keep the v1.1.0 completion celebration visible for at least two seconds. |
-| `SessionEnd` | `Idle` | 0 ms | Update the logical state to awake standby; any confirmed protected visual policy still applies. |
-| Local mouse inactivity | `Sleeping` | Trigger after 60000 ms idle | Sleep is driven by mouse inactivity, not SessionEnd. |
-| Local mouse movement after sleep | `Idle` | 0 ms | Wake immediately. |
-
-- These minimum-display values are fixed for v1.1.0. The confirmed one-shot and auto-return rules are defined immediately below.
-
-## Fixed v1.1.0 one-shot and auto-return policy
-
-- `PermissionRequest -> Attention` is a one-shot visual. Once Attention has actually been visible for its confirmed 2000 ms protected duration, recompute and display the latest logical state.
-- `Stop -> Happy` is a one-shot visual. Once Happy has actually been visible for its confirmed 2000 ms protected duration, recompute and display the latest logical state.
-- Start a protection timer when the Renderer state controller applies the animation and records `visibleSince`, not when Python receives the Hook and not while the state is pending.
-- Use an absolute deadline (`protectedUntil = visibleSince + duration`) and recompute the remaining time when a timer fires; delayed JavaScript timers must never shorten the protection period.
-- Never hardcode the return target of either one-shot animation. Return to the latest logical state at completion time so an intervening Hook is respected and stale animation history is not replayed.
-- Idle, Thinking, Working, and Sleeping are persistent states for v1.1.0. They do not auto-return merely because a timer elapsed.
-- `PostToolUse` must not restart or extend an unchanged Working animation.
-- `SessionEnd` updates the logical state to Idle and does not directly trigger Sleeping. Sleeping remains controlled by the local 60000 ms mouse-inactivity rule.
-- These one-shot classifications, return rules, and state priorities are fixed for v1.1.0.
-
-## Single visible-state authority for v1.1.0
-
-- Exactly one Renderer-side state controller has authority to choose Blueberry's user-visible animation.
-- Python only normalizes and forwards Codex Hook events. It must not decide priority, protection timing, pending replacement, or return targets.
-- Electron Main validates, deduplicates, and forwards semantic events. It must not maintain a second user-visible state machine.
-- The Renderer/DOM animation layer renders the controller's decision. It must not independently choose a next state or create a competing return timer.
-- The state controller owns `logicalState`, `visibleState`, `visibleSince`, `protectedUntil`, `pendingState`, and the mouse-idle deadline.
-- The state controller owns priority arbitration, minimum-display protection, repeated-state merging, one-shot completion, latest-state recomputation, and sleep/wake decisions.
-- Any valid Codex Hook received while `Sleeping` wakes Blueberry immediately and applies that Hook's mapped state. Reset the local mouse-idle deadline on this wake. A startled-wake transition is deferred to a later version.
-- `SessionEnd` updates the logical state to `Idle`; it does not mean task success and does not trigger sleep. If a protected one-shot is visible, finish its protection and then recompute the latest logical state.
-- Treat “actually visible” for v1.1.0 as the moment the Renderer controller successfully applies the new animation state and records `visibleSince`. Do not add first-pixel decode or paint acknowledgements.
-- Merge an unchanged state without resetting `visibleSince`. Keep only one priority-replaced pending state. On one-shot completion, resolve from `logicalState` rather than a hardcoded return target.
-- Renderer reload may safely fall back to `Idle` in v1.1.0; persistent runtime recovery is outside this MVP.
-- Before implementing or changing this controller, read this section and the current design document, then confirm ownership, priorities, protection timing, and pending-state behavior. If another module would gain visible-state authority, stop and report the responsibility conflict before editing code.
-
-## Stop and ask when the product meaning is uncertain
-
-- Stop implementation and ask the user before changing product meaning, success criteria, privacy boundaries, or the meaning of an animation.
-- Stop and report evidence when an acceptance gate fails. Do not continue downstream tests and do not label the version complete.
-- Stop and ask the user when the same area exposes repeated architecture conflicts, when three attempted fixes fail, or when the next fix would add a new authority/state source instead of resolving the existing one.
-- Preserve the failing test, reproduction steps, logs, and current Git state while waiting for direction. Do not hide, weaken, or rewrite an acceptance requirement to obtain a pass.
-
-## Subagent implementation and review protocol
-
-- Use subagents only when the user has explicitly approved subagent execution. Explaining or planning a subagent workflow does not itself authorize dispatch.
-- Execute state-controller work sequentially. Do not run multiple implementation subagents in parallel against shared state, Renderer, routing, or test files.
-- Assign a fresh implementation subagent to each bounded task. Provide the task text, allowed files, prohibited files, relevant product rules, exact test commands, expected evidence, and mandatory stop conditions directly; do not ask it to infer scope from the full conversation.
-- Every implementation subagent must use test-driven development: add a focused failing test, prove that it fails for the intended missing behavior, implement the smallest change, rerun focused and relevant regression tests, self-review the diff, and commit only its authorized scope.
-- Require each implementation subagent to report its status as `DONE`, `DONE_WITH_CONCERNS`, `NEEDS_CONTEXT`, or `BLOCKED`, together with changed files, before/after test evidence, test counts, commit hash, and unresolved concerns.
-- After implementation, dispatch an independent specification reviewer before any code-quality review. The specification reviewer checks exact product semantics, priority, protection timing, pending-state policy, single-controller ownership, scope exclusions, and missing or extra behavior.
-- A task with any open specification issue is incomplete. Return it to the original implementer for a focused correction, then obtain a fresh specification re-review.
-- Only after specification approval, dispatch an independent code-quality reviewer. This reviewer checks state-authority duplication, timer ownership and cleanup, stale replay, repeated-state restart, test quality, unnecessary complexity, unauthorized refactoring, and maintainability.
-- A task with any open code-quality issue is incomplete. Return it to the original implementer for correction and require code-quality re-review.
-- The primary agent must independently inspect `git status`, `git diff`, `git diff --check`, changed-file scope, commit identity, and the actual test output. Never accept a subagent's verbal claim as sufficient evidence.
-- Preserve TDD evidence where practical: the pre-implementation failure must be caused by the missing required behavior, and the post-implementation pass must run the same focused test.
-- After all tasks pass their two-stage reviews, dispatch a fresh final reviewer for the complete diff and rerun the full automated and runtime acceptance gates from the primary task.
-- HTTP 200, a passing unit test, a screenshot, a subagent report, or a single successful runtime sequence proves only its own layer. Do not substitute one evidence type for another.
-- If a subagent returns `NEEDS_CONTEXT`, provide the missing confirmed context before redispatch. If it returns `BLOCKED`, assess whether the task, reasoning level, or plan is wrong; never repeat the same attempt without changing the blocking condition.
-- Apply the existing mandatory user-confirmation stop to subagent work. After the first well-evidenced implementation still fails, an architecture conflict appears, or a product rule becomes ambiguous, preserve evidence and stop all downstream implementation, review, acceptance, build, install, and publication work until the user confirms the next action.
-
-## Mandatory user-confirmation stop
-
-- When a requested change is not working after the first well-evidenced fix attempt, stop. Report the remaining failure and ask the user before attempting another fix.
-- When a fix exposes a new architecture conflict, product-semantics question, or state-authority problem, stop immediately and ask the user. Do not continue with another patch based only on agent judgment.
-- While waiting for confirmation, do not modify production code, add further fixes, run downstream acceptance or packaging, replace the installed application, or publish anything.
-- Do not spawn or re-dispatch implementation, debugging, review, or acceptance subagents after the stop condition is reached unless the user explicitly approves the next action.
-- A user request to “continue” authorizes only the currently agreed plan. It does not authorize an unbounded sequence of repairs when new problems change that plan.
-- Never claim that a version is complete, nearly complete, accepted, or ready when a known required behavior is failing or has not been verified.
-
-## Verification and release claims
-
-- A successful HTTP response proves event acceptance, not visible animation success.
-- Verify installed macOS builds against the exact worktree by byte-comparing critical `app.asar` files before and after installation.
-- Prefer deterministic tests and CDP renderer inspection for animation state. Computer Use can generate Codex Tool Hooks and must not be the sole evidence for concurrent-state behavior.
-- Do not call v1.1.0 complete or release-ready while a required automated, installed-runtime, single-conversation, or package-identity gate is failing. Multi-session behavior is outside the confirmed v1.1.0 scope.
-
-## Context continuity
-
-- Treat `docs/context.md` as the confirmed continuity ledger for critical project decisions, current state, known problems, prohibitions, and next steps.
-- When system-provided history shows that conversation context was compacted, read `docs/context.md` before continuing the task.
-- Before deciding a critical task definition—especially Hook semantics, version scope, acceptance criteria, architecture ownership, release state, or an explicit user prohibition—search `docs/context.md` for an existing confirmed definition.
-- After detected context compaction, summarize any material new continuity information and show the exact proposed entry to the user. Append it to `docs/context.md` only after the user confirms it.
-- Keep confirmed decisions, current observations, known problems, prohibitions, and next steps distinct. Never record an inference as a confirmed fact.
-- Append new dated entries instead of silently overwriting history. Mark superseded decisions explicitly as deprecated and link them to the replacing decision.
+- 一个任务涉及多个领域时，只组合读取对应文件。
+- 专题规则与用户当前明确决定冲突时，以用户当前决定为准，并同步更新相关规则后再实施。
+- 两份专题规则相互冲突时停止并报告，不得自行选择更容易实现的一条。
+- 历史计划、迭代记录和验收证据不覆盖本索引或当前专题规则；它们只能提供历史背景。
