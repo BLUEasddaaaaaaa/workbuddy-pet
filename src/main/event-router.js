@@ -8,10 +8,10 @@ const EVENT_TO_STATE = Object.freeze({
   'tool.finished': 'working',
   'permission.requested': 'attention',
   'turn.finished': 'happy',
-  'session.ended': 'sleeping',
+  'session.ended': 'idle',
 });
 
-const VALID_STATES = new Set(Object.values(EVENT_TO_STATE));
+const VALID_STATES = new Set([...Object.values(EVENT_TO_STATE), 'sleeping']);
 
 const TOP_LEVEL_FIELDS = new Set([
   'schema_version',

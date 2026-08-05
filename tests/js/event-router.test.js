@@ -18,7 +18,7 @@ const EXPECTED_STATES = {
   'tool.finished': 'working',
   'permission.requested': 'attention',
   'turn.finished': 'happy',
-  'session.ended': 'sleeping',
+  'session.ended': 'idle',
 };
 
 
