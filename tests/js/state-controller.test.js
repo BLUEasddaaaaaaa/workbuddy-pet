@@ -283,3 +283,40 @@ test('C23 dispose clears timers and ignores later input', () => {
   clock.advance(5000);
   assert.deepEqual(visuals.map((entry) => entry.state), ['idle', 'thinking']);
 });
+
+test('mouse activity cancels pending sleep without bypassing the current hold', () => {
+  const { controller, clock, resets } = createHarness();
+  controller.handleHookState('thinking');
+  clock.advance(500);
+  controller.handleMouseSleep();
+  clock.advance(100);
+  controller.handleMouseActivity();
+
+  assert.equal(controller.snapshot().visibleState, 'thinking');
+  assert.equal(controller.snapshot().logicalState, 'thinking');
+  assert.equal(controller.snapshot().pendingState, null);
+  assert.equal(resets(), 1);
+  clock.advance(1400);
+  assert.equal(controller.snapshot().visibleState, 'thinking');
+});
+
+test('a hook cancels pending sleep and one-shot returns to the prior persistent state', () => {
+  const { controller, clock, visuals, resets } = createHarness();
+  controller.handleHookState('thinking');
+  clock.advance(500);
+  controller.handleMouseSleep();
+  clock.advance(100);
+  controller.handleHookState('attention');
+
+  assert.equal(controller.snapshot().visibleState, 'thinking');
+  assert.equal(controller.snapshot().logicalState, 'thinking');
+  assert.equal(controller.snapshot().pendingState, 'attention');
+  assert.equal(resets(), 1);
+  clock.advance(1400);
+  assert.equal(controller.snapshot().visibleState, 'attention');
+  assert.equal(controller.snapshot().visibleSince, 2000);
+  assert.equal(controller.snapshot().protectedUntil, 4000);
+  clock.advance(2000);
+  assert.equal(controller.snapshot().visibleState, 'thinking');
+  assert.deepEqual(visuals.map((entry) => entry.state), ['idle', 'thinking', 'attention', 'thinking']);
+});

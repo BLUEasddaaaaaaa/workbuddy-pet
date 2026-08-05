@@ -42,6 +42,7 @@
     const resetMouseIdle = options.resetMouseIdle;
 
     let logicalState = 'idle';
+    let latestPersistentState = 'idle';
     let visibleState = null;
     let visibleSince = 0;
     let protectedUntil = 0;
@@ -114,13 +115,24 @@
       if (visibleState === 'sleeping') {
         clearScheduledTimer();
         pendingState = null;
-        logicalState = 'idle';
+        logicalState = latestPersistentState;
         resetMouseIdle();
-        if (PERSISTENT_STATES.has(state)) logicalState = state;
+        if (PERSISTENT_STATES.has(state)) {
+          logicalState = state;
+          latestPersistentState = state;
+        }
         return show(state);
       }
 
-      if (PERSISTENT_STATES.has(state)) logicalState = state;
+      if (logicalState === 'sleeping') {
+        logicalState = latestPersistentState;
+        if (pendingState === 'sleeping') pendingState = null;
+        resetMouseIdle();
+      }
+      if (PERSISTENT_STATES.has(state)) {
+        logicalState = state;
+        latestPersistentState = state;
+      }
       return request(state);
     }
 
@@ -131,10 +143,17 @@
     }
 
     function handleMouseActivity() {
-      if (disposed || visibleState !== 'sleeping') return false;
+      if (disposed || logicalState !== 'sleeping') return false;
+      if (visibleState !== 'sleeping') {
+        logicalState = latestPersistentState;
+        if (pendingState === 'sleeping') pendingState = null;
+        resetMouseIdle();
+        return true;
+      }
       clearScheduledTimer();
       pendingState = null;
       logicalState = 'idle';
+      latestPersistentState = 'idle';
       return show('idle');
     }
 
