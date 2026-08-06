@@ -60,6 +60,8 @@ test('renderer delegates all visible state decisions to one state controller', (
     'happyTimer',
     'workingTimer',
     'attentionTimer',
+    'ATTENTION_DURATION',
+    'WORKING_TIMEOUT',
     'triggerHappy',
     'triggerWorking',
     'triggerAttention',

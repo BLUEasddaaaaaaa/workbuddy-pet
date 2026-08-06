@@ -197,8 +197,32 @@ test('C14 a late timer transitions once and starts the next hold when shown', ()
   controller.handleHookState('working');
   clock.advance(2500);
   assert.deepEqual(visuals.map((entry) => entry.state), ['idle', 'thinking', 'working']);
-  assert.equal(controller.snapshot().visibleSince, 2500);
-  assert.equal(controller.snapshot().protectedUntil, 3500);
+  assert.deepEqual(controller.snapshot(), {
+    logicalState: 'working', visibleState: 'working', visibleSince: 2500,
+    protectedUntil: 3500, pendingState: null,
+  });
+  clock.advance(1000);
+  assert.deepEqual(visuals.map((entry) => entry.state), ['idle', 'thinking', 'working']);
+});
+
+test('stale pending history is never replayed', () => {
+  const { controller, clock, visuals } = createHarness();
+  controller.handleHookState('thinking');
+  controller.handleHookState('working');
+  controller.handleHookState('idle');
+  controller.handleHookState('attention');
+  controller.handleHookState('happy');
+
+  assert.equal(controller.snapshot().pendingState, 'attention');
+  clock.advance(2000);
+  assert.deepEqual(controller.snapshot(), {
+    logicalState: 'idle', visibleState: 'attention', visibleSince: 2000,
+    protectedUntil: 4000, pendingState: null,
+  });
+  clock.advance(2000);
+  assert.deepEqual(visuals.map((entry) => entry.state), [
+    'idle', 'thinking', 'attention', 'idle',
+  ]);
 });
 
 test('C15 an early callback reschedules the absolute remainder', () => {
