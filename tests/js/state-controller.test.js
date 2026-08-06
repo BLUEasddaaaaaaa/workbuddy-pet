@@ -368,3 +368,35 @@ test('persistent hook during post-sleep attention becomes its return state', () 
     'idle', 'working', 'sleeping', 'attention', 'working',
   ]);
 });
+
+test('failed sleeping render preserves the persistent state for recovery', () => {
+  const clock = createFakeClock();
+  const visuals = [];
+  let resets = 0;
+  let failSleeping = true;
+  const controller = createStateController({
+    now: clock.now,
+    setTimer: clock.setTimer,
+    clearTimer: clock.clearTimer,
+    applyVisual(state) {
+      if (state === 'sleeping' && failSleeping) {
+        failSleeping = false;
+        throw new Error('sleeping render failed');
+      }
+      visuals.push({ state, at: clock.now() });
+    },
+    resetMouseIdle() { resets += 1; },
+  });
+
+  controller.handleHookState('working');
+  clock.advance(1000);
+  assert.throws(() => controller.handleMouseSleep(), /sleeping render failed/);
+  assert.equal(controller.snapshot().visibleState, 'working');
+
+  assert.equal(controller.handleMouseActivity(), true);
+  assert.equal(controller.snapshot().logicalState, 'working');
+  assert.equal(controller.snapshot().visibleState, 'working');
+  assert.equal(controller.snapshot().pendingState, null);
+  assert.equal(resets, 1);
+  assert.deepEqual(visuals.map((entry) => entry.state), ['idle', 'working']);
+});
