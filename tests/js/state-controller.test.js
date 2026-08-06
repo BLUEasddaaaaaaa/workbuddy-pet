@@ -320,3 +320,51 @@ test('a hook cancels pending sleep and one-shot returns to the prior persistent 
   assert.equal(controller.snapshot().visibleState, 'thinking');
   assert.deepEqual(visuals.map((entry) => entry.state), ['idle', 'thinking', 'attention', 'thinking']);
 });
+
+test('attention after visible sleeping returns to idle instead of stale working', () => {
+  const { controller, clock, visuals } = createHarness();
+  controller.handleHookState('working');
+  clock.advance(1000);
+  controller.handleMouseSleep();
+  controller.handleHookState('attention');
+  clock.advance(2000);
+
+  assert.equal(controller.snapshot().logicalState, 'idle');
+  assert.equal(controller.snapshot().visibleState, 'idle');
+  assert.deepEqual(visuals.map((entry) => entry.state), [
+    'idle', 'working', 'sleeping', 'attention', 'idle',
+  ]);
+});
+
+test('happy after visible sleeping returns to idle instead of stale working', () => {
+  const { controller, clock, visuals } = createHarness();
+  controller.handleHookState('working');
+  clock.advance(1000);
+  controller.handleMouseSleep();
+  controller.handleHookState('happy');
+  clock.advance(2000);
+
+  assert.equal(controller.snapshot().logicalState, 'idle');
+  assert.equal(controller.snapshot().visibleState, 'idle');
+  assert.deepEqual(visuals.map((entry) => entry.state), [
+    'idle', 'working', 'sleeping', 'happy', 'idle',
+  ]);
+});
+
+test('persistent hook during post-sleep attention becomes its return state', () => {
+  const { controller, clock, visuals } = createHarness();
+  controller.handleHookState('working');
+  clock.advance(1000);
+  controller.handleMouseSleep();
+  controller.handleHookState('attention');
+  assert.equal(controller.snapshot().logicalState, 'idle');
+  clock.advance(500);
+  controller.handleHookState('working');
+  clock.advance(1500);
+
+  assert.equal(controller.snapshot().logicalState, 'working');
+  assert.equal(controller.snapshot().visibleState, 'working');
+  assert.deepEqual(visuals.map((entry) => entry.state), [
+    'idle', 'working', 'sleeping', 'attention', 'working',
+  ]);
+});

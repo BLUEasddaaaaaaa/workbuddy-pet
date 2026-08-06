@@ -80,6 +80,7 @@
 
     function show(state, duration = MIN_DISPLAY_MS[state]) {
       if (disposed || state === visibleState) return false;
+      if (state === 'sleeping') latestPersistentState = 'idle';
       applyVisual(state);
       visibleState = state;
       visibleSince = now();
