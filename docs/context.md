@@ -6,6 +6,7 @@
 
 - Blueberry v1.1.0 的目标是完成 Codex Hook 到桌宠动画的最小可用响应闭环。
 - 当前版本只考虑一个 Codex 对话。
+- 单对话下，Thinking/Working 一直保持，直到新 Hook、SessionEnd 或鼠标睡眠改变状态。
 - v1.1.0 复用现有动画，不增加新动画、JSONL 补充事件、多会话、Subagent 行为或复杂权限提醒。
 - 当前开发针对 Apple Silicon macOS。
 

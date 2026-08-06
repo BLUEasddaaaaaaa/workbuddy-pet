@@ -42,6 +42,7 @@
 - 计时从 Renderer 状态控制器应用动画并记录 `visibleSince` 时开始，不从 Python 收到 Hook 或进入 pending 时开始。
 - 使用绝对截止时间 `protectedUntil = visibleSince + duration`；定时器回调时重新计算剩余时间，延迟回调不得缩短保护期。
 - Idle、Thinking、Working、Sleeping 为持续状态，不因普通计时器到期自动返回。
+- 单对话下，Thinking/Working 一直保持，直到新 Hook、SessionEnd 或鼠标睡眠改变状态。
 - Renderer 重载可安全回到 Idle；持久化恢复不属于 v1.1.0。
 
 ## 唯一状态权威
@@ -53,5 +54,6 @@
 - 控制器拥有 `logicalState`、`visibleState`、`visibleSince`、`protectedUntil`、`pendingState` 和鼠标空闲截止时间。
 - 控制器统一负责优先级、保护期、重复合并、一次性返回、最新状态重算和睡眠/唤醒。
 - Sleeping 时收到任意有效 Codex Hook，立即唤醒并应用该 Hook 映射状态，同时重置鼠标空闲计时；惊醒过渡留到后续版本。
+- 真正显示 Sleeping 后，睡眠前的 Thinking/Working 不再是有效恢复目标；唤醒基线为 Idle。持续 Hook 会成为新的逻辑状态；Attention/Happy 播放满 2000 ms 后按唤醒以来收到的最新逻辑状态重新计算。
 - SessionEnd 只把逻辑状态更新为 Idle。保护中的一次性动画播放完成后再按最新逻辑状态计算。
 - 后续设计或修改控制器前重新确认本文件。若实现会产生第二个可见状态权威，立即停止并报告。

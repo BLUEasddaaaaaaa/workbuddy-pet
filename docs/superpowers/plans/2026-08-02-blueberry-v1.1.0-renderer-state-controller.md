@@ -76,6 +76,9 @@ Minimum display times are Thinking 2000 ms, Working 1000 ms, Attention 2000 ms, 
 | C21 | Idle action outside Idle | Request rejected |
 | C22 | Hook during protected idle action | It waits; protection cannot be bypassed |
 | C23 | Dispose | Timer cleared and later inputs ignored |
+| C24 | Sleeping, then Attention | Attention displays 2000 ms, then resolves to Idle rather than stale pre-sleep state |
+| C25 | Sleeping, then Happy | Happy displays 2000 ms, then resolves to Idle rather than stale pre-sleep state |
+| C26 | Sleeping, Attention, then Working during one-shot | Attention completes, then resolves to the new Working state |
 | W01 | `session.ended` | Router returns Idle |
 | W02 | Renderer IPC state | Goes through one controller instance |
 | W03 | Legacy policy/timers | Absent from active Renderer wiring |
