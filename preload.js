@@ -5,6 +5,7 @@ const scale = parseInt(process.env.PET_SCALE) || 1;
 contextBridge.exposeInMainWorld('petAPI', {
   platform: process.platform,
   scale: scale,
+  acceptanceMode: process.env.BLUEBERRY_ACCEPTANCE === '1',
   moveWindow: (dx, dy) => ipcRenderer.send('move-window', dx, dy),
   dragEnd: () => ipcRenderer.send('drag-end'),
   onMousePosition: (callback) => {

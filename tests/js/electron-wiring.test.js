@@ -70,3 +70,26 @@ test('renderer delegates all visible state decisions to one state controller', (
     assert.doesNotMatch(source, new RegExp(competingAuthority));
   }
 });
+
+
+test('renderer exposes only an immutable acceptance snapshot facade behind the exact boolean gate', () => {
+  const source = read('src/renderer/renderer.js');
+
+  assert.match(source, /if \(window\.petAPI\.acceptanceMode === true\) \{/);
+  assert.match(source, /Object\.defineProperty\(window, '__blueberryDebug', \{\s*value: Object\.freeze\(\{\s*snapshot: function \(\) \{\s*return stateController\.snapshot\(\);\s*\},?\s*\}\),\s*writable: false,\s*configurable: false,\s*enumerable: false,\s*\}\);/);
+
+  const facade = source.match(/Object\.defineProperty\(window, '__blueberryDebug',[\s\S]*?\n  \}\);/);
+  assert.ok(facade, 'acceptance facade definition must exist');
+  assert.equal((facade[0].match(/snapshot\s*:/g) || []).length, 1);
+  for (const forbidden of [
+    'controller',
+    'setState',
+    'handleHookState',
+    'handleMouseActivity',
+    'handleMouseSleep',
+    'requestIdleAction',
+    'timer',
+  ]) {
+    assert.doesNotMatch(facade[0], new RegExp(`\\b${forbidden}\\b`));
+  }
+});

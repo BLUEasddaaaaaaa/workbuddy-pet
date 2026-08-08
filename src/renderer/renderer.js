@@ -289,6 +289,19 @@
     resetMouseIdle: resetMouseIdle,
   });
 
+  if (window.petAPI.acceptanceMode === true) {
+    Object.defineProperty(window, '__blueberryDebug', {
+      value: Object.freeze({
+        snapshot: function () {
+          return stateController.snapshot();
+        },
+      }),
+      writable: false,
+      configurable: false,
+      enumerable: false,
+    });
+  }
+
   // work.gif 加载失败时设置降级标记
   workImg.addEventListener('error', function () {
     workGifUnavailable = true;
