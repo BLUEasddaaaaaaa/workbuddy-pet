@@ -18,7 +18,10 @@
 - Hook、鼠标睡眠和随机待机动作已统一进入唯一 Renderer 状态控制器；旧完成策略和竞争状态计时器已经删除。
 - Task 4 风险回归测试已经完成，并通过独立规格审查和代码质量审查。
 - 自动化测试已锁定晚到计时器、单一计时器所有权、过期 pending 不补播和 Renderer 竞争状态逻辑防回退。
-- 当前 JavaScript 71/71、Python 10/10 通过；这些证据不代表运行时动画、构建制品或安装版本已经验收。
+- 验收模式只读状态接口已经实现；只有 `BLUEBERRY_ACCEPTANCE=1` 时暴露不可写的 `snapshot()`，普通模式下不存在。
+- Task 5 worktree 运行验收已经通过：两轮真实 fixtures 状态顺序一致，保护时间、pending、重复状态、一次性返回和自然睡眠唤醒均符合规则。
+- 当前 JavaScript 74/74、Python 10/10 通过，完整 Renderer 状态控制工作包已通过最终独立审查。
+- 当前结论只覆盖 worktree 运行时；安装包身份、安装运行时、真实 Codex 配置及发布门槛尚未完成。
 - 当前 v1.1.0 不能描述为完成、验收通过或可以发布。
 - `/Applications/Blueberry.app` 仍是此前安装的旧版本，不代表当前 worktree。
 
@@ -48,4 +51,4 @@
 - 首个开发检查点已经完成：
   1. `SessionEnd -> Idle` 路由修正及失败测试；
   2. 纯 Renderer 状态控制器及假时钟测试。
-- 下一步执行 Task 5：启动 worktree 版本，模拟单对话 Codex Hook，采集动画顺序、最低显示时间和睡眠唤醒证据。
+- 用户已批准发布流程阶段 1 和阶段 2：冻结唯一候选提交并执行干净的 macOS arm64 构建；不安装、不替换 `/Applications/Blueberry.app`、不推送、不发布。
