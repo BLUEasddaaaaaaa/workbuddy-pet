@@ -201,7 +201,9 @@ test('C14 a late timer transitions once and starts the next hold when shown', ()
     logicalState: 'working', visibleState: 'working', visibleSince: 2500,
     protectedUntil: 3500, pendingState: null,
   });
+  assert.equal(clock.pendingCount(), 1);
   clock.advance(1000);
+  assert.equal(clock.pendingCount(), 0);
   assert.deepEqual(visuals.map((entry) => entry.state), ['idle', 'thinking', 'working']);
 });
 
