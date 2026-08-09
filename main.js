@@ -1,6 +1,6 @@
 const { app, BrowserWindow, screen, ipcMain } = require('electron');
 const path = require('path');
-const http = require('http');
+const { startEventServer } = require('./src/main/event-server');
 
 // ========== 缩放参数 ==========
 // 用法: npm start -- --scale=2  (2x 大小 = 512x512)
@@ -61,89 +61,18 @@ ipcMain.on('drag-end', () => {
   mainWindow.setIgnoreMouseEvents(false);
 });
 
-// ========== 本地 HTTP 触发服务（CodeBuddy Hook 事件通知） ==========
-// POST http://127.0.0.1:18920/state  Body: {"state":"working"|"happy"|"thinking"|"sleeping"|"idle"|"attention"}
-// POST http://127.0.0.1:18920/happy  （向后兼容，等价于 state=happy）
-//
-// CodeBuddy Hook 事件 → 宠物状态映射表：
-//   SessionStart      → idle
-//   SessionEnd        → sleeping
-//   UserPromptSubmit  → thinking
-//   PreToolUse        → working
-//   PostToolUse       → working
-//   Stop              → happy  (stop_hook_active=false 时)
-//   Notification      → happy  (idle_prompt) / attention (其他)
-//   PreCompact        → idle
+// ========== 本地事件服务（Codex Hook → Blueberry 事件 → 宠物状态） ==========
 let httpServer = null;
-
-// 合法的状态白名单，防止注入非预期状态
-const VALID_STATES = new Set(['idle', 'thinking', 'working', 'happy', 'sleeping', 'attention']);
 
 function sendStateToRenderer(state) {
   if (!mainWindow || mainWindow.isDestroyed()) return;
-  if (!VALID_STATES.has(state)) return;
   mainWindow.webContents.send('trigger-state', state);
 }
 
 function startHttpTrigger() {
-  httpServer = http.createServer((req, res) => {
-    // CORS 头，方便从任何来源调用
-    res.setHeader('Access-Control-Allow-Origin', '*');
-    res.setHeader('Access-Control-Allow-Methods', 'POST, OPTIONS');
-    res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
-
-    if (req.method === 'OPTIONS') {
-      res.writeHead(204);
-      res.end();
-      return;
-    }
-
-    if (req.method !== 'POST') {
-      res.writeHead(405);
-      res.end();
-      return;
-    }
-
-    // ── /state 路由：通用状态触发 ──────────────────────────────
-    if (req.url === '/state') {
-      let body = '';
-      req.on('data', chunk => { body += chunk; });
-      req.on('end', () => {
-        try {
-          const payload = JSON.parse(body || '{}');
-          const state = payload.state;
-          if (!state || !VALID_STATES.has(state)) {
-            res.writeHead(400, { 'Content-Type': 'application/json' });
-            res.end(JSON.stringify({ status: 'error', message: `invalid state: ${state}. valid: ${[...VALID_STATES].join(',')}` }));
-            return;
-          }
-          sendStateToRenderer(state);
-          res.writeHead(200, { 'Content-Type': 'application/json' });
-          res.end(JSON.stringify({ status: 'ok', state }));
-        } catch (e) {
-          res.writeHead(400, { 'Content-Type': 'application/json' });
-          res.end(JSON.stringify({ status: 'error', message: 'invalid json' }));
-        }
-      });
-      return;
-    }
-
-    // ── /happy 路由：向后兼容保留 ──────────────────────────────
-    if (req.url === '/happy') {
-      sendStateToRenderer('happy');
-      res.writeHead(200, { 'Content-Type': 'application/json' });
-      res.end(JSON.stringify({ status: 'ok', state: 'happy' }));
-      return;
-    }
-
-    res.writeHead(404);
-    res.end();
-  });
-
-  httpServer.listen(18920, '127.0.0.1', () => {
-    console.log('[pet] HTTP trigger listening on http://127.0.0.1:18920');
-    console.log('[pet]   POST /state  {"state":"working|happy|thinking|sleeping|idle|attention"}');
-    console.log('[pet]   POST /happy  (backward compat)');
+  httpServer = startEventServer({
+    onState: sendStateToRenderer,
+    logger: console,
   });
 }
 
@@ -174,7 +103,7 @@ app.whenReady().then(() => {
 });
 
 app.on('window-all-closed', () => {
-  if (httpServer) httpServer.close();
+  if (httpServer && httpServer.listening) httpServer.close();
   app.quit();
 });
 

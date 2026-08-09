@@ -97,7 +97,8 @@
     lastMoveTime = performance.now();
 
     // 点击操作重置空闲计时
-    lastMouseMoveTime = performance.now();
+    stateController.handleMouseActivity();
+    resetMouseIdle();
   });
 
   // ========== 统一的 mousemove 处理（仅处理窗口拖拽，眼睛跟随由全局 IPC 轮询驱动） ==========
@@ -147,54 +148,9 @@
   // ========== 睡眠系统（60s 无鼠标移动 → 自动睡觉 / 移动唤醒） ==========
 
   var SLEEP_TIMEOUT = 60000;  // 60 秒无操作进入睡眠
-  var isSleeping = false;
   var lastMouseMoveTime = 0;
 
   var sleepImg = $('sleep-img');
-
-  function enterSleep() {
-    if (isSleeping) return;
-    isSleeping = true;
-    hasMouse = false;
-
-    // 如有进行中的待机动作或开心动作，先取消
-    idleActionActive = false;
-    if (happyTimer) { clearTimeout(happyTimer); happyTimer = null; }
-    petContainer.classList.remove('reading', 'thinking', 'happy');
-    petShadow.style.display = 'none';
-
-    // 切换显示：隐藏所有非睡眠元素
-    $('pet-img').style.display = 'none';
-    svgEl.style.display = 'none';
-    hideAllActionGifs();
-    sleepImg.style.display = 'block';
-
-    // 添加睡眠呼吸脉动动画
-    petContainer.classList.add('sleeping');
-  }
-
-  function wakeUp() {
-    if (!isSleeping) return;
-    isSleeping = false;
-
-    // 切换显示：隐藏睡眠 GIF，显示 SVG 眼睛 + 精灵图
-    sleepImg.style.display = 'none';
-    $('pet-img').style.display = 'block';
-    svgEl.style.display = '';
-
-    // 移除睡眠动画
-    petContainer.classList.remove('sleeping');
-
-    // 确保待机动作也被清理
-    idleActionActive = false;
-    if (happyTimer) { clearTimeout(happyTimer); happyTimer = null; }
-    hideAllActionGifs();
-    petContainer.classList.remove('reading', 'thinking', 'happy');
-    petShadow.style.display = 'none';
-
-    // 重置空闲计时
-    lastMouseMoveTime = performance.now();
-  }
 
   // ========== 待机随机动作系统（read 5% / think 3%） ==========
 
@@ -205,14 +161,14 @@
 
   var lastIdleCheck   = 0;
   var lastReadTime     = -READ_COOLDOWN;  // 初始允许立即触发
-  var idleActionActive = false;
-
   var readImg  = $('read-img');
   var thinkImg = $('think-img');
   var workImg  = $('work-img');
   var attentionImg = $('attention-img');
   var happyImg = $('happy-img');
   var petShadow = $('pet-shadow');
+  var workGifUnavailable = false;
+  var renderedVisualState = null;
 
   function hideAllActionGifs() {
     readImg.style.display = 'none';
@@ -223,70 +179,23 @@
     sleepImg.style.display = 'none';
   }
 
-  function setPetState(state) {
-    if (idleActionActive || isSleeping || isDragging) return false;
-
-    idleActionActive = true;
-
-    // 隐藏默认 idle（PNG 身体 + SVG 眼睛）
-    $('pet-img').style.display = 'none';
-    svgEl.style.display = 'none';
-    hideAllActionGifs();
-
-    var duration = ACTION_DURATION_MIN + Math.random() * (ACTION_DURATION_MAX - ACTION_DURATION_MIN);
-    if (state === 'reading') {
-      readImg.style.display = 'block';
-      petContainer.classList.add('reading');
-      lastReadTime = performance.now();
-    } else if (state === 'thinking') {
-      thinkImg.style.display = 'block';
-      petContainer.classList.add('thinking');
-    } else if (state === 'working') {
-      if (workGifUnavailable) {
-        // work.gif 缺失 → 降级显示 idle PNG + SVG 眼睛，保留 working 动画
-        $('pet-img').style.display = 'block';
-        svgEl.style.display = '';
-      } else {
-        workImg.style.display = 'block';
-      }
-      petContainer.classList.add('working');
-    }
-
-    // 显示底部阴影
-    petShadow.style.display = 'block';
-
-    // 定时恢复 idle
-    setTimeout(function () {
-      hideAllActionGifs();
-      petContainer.classList.remove('reading', 'thinking', 'working');
-      petShadow.style.display = 'none';
-
-      // 恢复 PNG 身体 + SVG 眼睛
-      $('pet-img').style.display = 'block';
-      svgEl.style.display = '';
-
-      idleActionActive = false;
-      lastMouseMoveTime = performance.now();  // 重置睡眠计时
-    }, duration);
-
-    return true;
-  }
-
   function checkIdleActions(now) {
-    if (idleActionActive || isSleeping || isDragging) return;
+    if (stateController.snapshot().visibleState !== 'idle' || isDragging) return;
     if (now - lastIdleCheck < IDLE_CHECK_INTERVAL) return;
 
     lastIdleCheck = now;
 
     // read: 5% 概率，2min 冷却
     if (Math.random() < 0.05 && (now - lastReadTime >= READ_COOLDOWN)) {
-      setPetState('reading');
+      var readDuration = ACTION_DURATION_MIN + Math.random() * (ACTION_DURATION_MAX - ACTION_DURATION_MIN);
+      if (stateController.requestIdleAction('idle-reading', readDuration)) lastReadTime = now;
       return;
     }
 
     // think: 5% 概率
     if (Math.random() < 0.05) {
-      setPetState('thinking');
+      var thinkDuration = ACTION_DURATION_MIN + Math.random() * (ACTION_DURATION_MAX - ACTION_DURATION_MIN);
+      stateController.requestIdleAction('idle-thinking', thinkDuration);
       return;
     }
   }
@@ -323,160 +232,85 @@
     }
   }
 
-  // ========== 通用恢复 idle ==========
-
-  function restoreIdle() {
+  function renderVisualState(state) {
     hideAllActionGifs();
-    petContainer.classList.remove('reading', 'thinking', 'working', 'happy', 'attention');
+    petContainer.classList.remove('reading', 'thinking', 'working', 'happy', 'attention', 'sleeping');
     petShadow.style.display = 'none';
-    $('pet-img').style.display = 'block';
-    svgEl.style.display = '';
-    idleActionActive = false;
+    $('pet-img').style.display = 'none';
+    svgEl.style.display = 'none';
+
+    if (state === 'idle') {
+      $('pet-img').style.display = 'block';
+      svgEl.style.display = '';
+    } else if (state === 'idle-reading') {
+      readImg.style.display = 'block';
+      petContainer.classList.add('reading');
+      petShadow.style.display = 'block';
+    } else if (state === 'idle-thinking' || state === 'thinking') {
+      thinkImg.style.display = 'block';
+      petContainer.classList.add('thinking');
+      petShadow.style.display = 'block';
+    } else if (state === 'working') {
+      if (workGifUnavailable) {
+        $('pet-img').style.display = 'block';
+        svgEl.style.display = '';
+      } else {
+        workImg.style.display = 'block';
+      }
+      petContainer.classList.add('working');
+      petShadow.style.display = 'block';
+    } else if (state === 'attention') {
+      attentionImg.style.display = 'block';
+      petContainer.classList.add('attention');
+      petShadow.style.display = 'block';
+    } else if (state === 'happy') {
+      happyImg.style.display = 'block';
+      petContainer.classList.add('happy');
+      petShadow.style.display = 'block';
+      if (renderedVisualState !== 'happy') playCompletionSound();
+    } else if (state === 'sleeping') {
+      sleepImg.style.display = 'block';
+      petContainer.classList.add('sleeping');
+      hasMouse = false;
+    }
+
+    renderedVisualState = state;
+  }
+
+  function resetMouseIdle() {
     lastMouseMoveTime = performance.now();
   }
 
-  // ========== 开心状态（外部触发，任务完成） ==========
+  var stateController = window.BlueberryStateController.createStateController({
+    now: function () { return performance.now(); },
+    setTimer: function (callback, delay) { return setTimeout(callback, delay); },
+    clearTimer: function (timer) { clearTimeout(timer); },
+    applyVisual: renderVisualState,
+    resetMouseIdle: resetMouseIdle,
+  });
 
-  var happyTimer = null;
-
-  function triggerHappy() {
-    if (happyTimer) { clearTimeout(happyTimer); happyTimer = null; }
-    if (isSleeping) wakeUp();
-
-    idleActionActive = true;
-    petContainer.classList.remove('reading', 'thinking', 'working', 'attention');
-
-    $('pet-img').style.display = 'none';
-    svgEl.style.display = 'none';
-    hideAllActionGifs();
-    happyImg.style.display = 'block';
-
-    petContainer.classList.add('happy');
-    petShadow.style.display = 'block';
-
-    playCompletionSound();
-
-    happyTimer = setTimeout(function () {
-      restoreIdle();
-      happyTimer = null;
-    }, 3000);
+  if (window.petAPI.acceptanceMode === true) {
+    Object.defineProperty(window, '__blueberryDebug', {
+      value: Object.freeze({
+        snapshot: function () {
+          return stateController.snapshot();
+        },
+      }),
+      writable: false,
+      configurable: false,
+      enumerable: false,
+    });
   }
-
-  // ========== 工作状态（CodeBuddy PreToolUse / PostToolUse 触发） ==========
-
-  var workingTimer = null;
-  var WORKING_TIMEOUT = 30000;  // 30s 无新事件 → 自动回 idle（防止 hook 丢失）
-  var workGifUnavailable = false;  // work.gif 缺失时降级
 
   // work.gif 加载失败时设置降级标记
   workImg.addEventListener('error', function () {
     workGifUnavailable = true;
-    // 隐藏破损图标
     workImg.style.display = 'none';
-  });
-
-  function triggerWorking() {
-    if (workingTimer) { clearTimeout(workingTimer); workingTimer = null; }
-    if (happyTimer) return;  // happy 优先级最高，不打断
-
-    if (isSleeping) wakeUp();
-
-    idleActionActive = true;
-    petContainer.classList.remove('reading', 'thinking', 'attention', 'happy');
-
-    hideAllActionGifs();
-
-    if (workGifUnavailable) {
-      // work.gif 缺失 → 降级显示 idle PNG + SVG 眼睛，保留 working 动画 class
+    if (stateController.snapshot().visibleState === 'working') {
       $('pet-img').style.display = 'block';
       svgEl.style.display = '';
-    } else {
-      $('pet-img').style.display = 'none';
-      svgEl.style.display = 'none';
-      workImg.style.display = 'block';
     }
-
-    petContainer.classList.add('working');
-    petShadow.style.display = 'block';
-
-    workingTimer = setTimeout(function () {
-      restoreIdle();
-      workingTimer = null;
-    }, WORKING_TIMEOUT);
-  }
-
-  // ========== 注意状态（CodeBuddy Stop / Notification 触发） ==========
-
-  var attentionTimer = null;
-  var ATTENTION_DURATION = 5000;  // 5s 后自动回 idle
-
-  function triggerAttention() {
-    if (attentionTimer) { clearTimeout(attentionTimer); attentionTimer = null; }
-    if (happyTimer) return;  // happy 优先
-
-    if (isSleeping) wakeUp();
-
-    idleActionActive = true;
-    petContainer.classList.remove('reading', 'thinking', 'working', 'happy');
-
-    $('pet-img').style.display = 'none';
-    svgEl.style.display = 'none';
-    hideAllActionGifs();
-    attentionImg.style.display = 'block';
-
-    petContainer.classList.add('attention');
-    petShadow.style.display = 'block';
-
-    attentionTimer = setTimeout(function () {
-      restoreIdle();
-      attentionTimer = null;
-    }, ATTENTION_DURATION);
-  }
-
-  // ========== 统一外部状态分发（CodeBuddy hook 事件入口） ==========
-  //
-  // 完整事件映射表（与 hooks/codebuddy-hook.js 保持同步）：
-  //   SessionStart                → idle      （会话开始）
-  //   SessionEnd                  → sleeping  （会话结束，进入睡眠）
-  //   UserPromptSubmit            → thinking  （用户发送提示词）
-  //   PreToolUse                  → working   （工具调用前）
-  //   PostToolUse                 → working   （工具调用后）
-  //   Stop (stop_hook_active=fasle) → happy   （AI 完成任务）
-  //   Notification (idle_prompt)  → happy     （任务弹窗）
-  //   Notification (其他)         → attention （需要通知）
-  //   PreCompact                  → idle      （上下文压缩前）
-
-  function triggerExternalState(state) {
-    switch (state) {
-      case 'happy':
-        triggerHappy();
-        break;
-      case 'working':
-        triggerWorking();
-        break;
-      case 'attention':
-        triggerAttention();
-        break;
-      case 'thinking':
-        if (workingTimer) { clearTimeout(workingTimer); workingTimer = null; }
-        if (happyTimer) return;
-        if (isSleeping) wakeUp();
-        idleActionActive = false;   // 允许 setPetState 进入
-        setPetState('thinking');
-        break;
-      case 'sleeping':
-        if (!isSleeping) enterSleep();
-        break;
-      case 'idle':
-        if (workingTimer) { clearTimeout(workingTimer); workingTimer = null; }
-        if (attentionTimer) { clearTimeout(attentionTimer); attentionTimer = null; }
-        if (isSleeping) wakeUp();
-        else restoreIdle();
-        break;
-      default:
-        break;
-    }
-  }
+  });
 
   // ========== 眼睛目标计算（统一方向，双眼同步，杜绝抽搐/对眼） ==========
 
@@ -619,19 +453,18 @@
 
   function gameLoop(timestamp) {
     // 睡眠检测：60s 无鼠标移动 → 自动睡觉（拖拽/反应期间不触发）
-    if (!isSleeping && !isDragging && lastMouseMoveTime > 0 && (timestamp - lastMouseMoveTime > SLEEP_TIMEOUT)) {
-      enterSleep();
+    var visibleState = stateController.snapshot().visibleState;
+    if (visibleState !== 'sleeping' && !isDragging && lastMouseMoveTime > 0 && (timestamp - lastMouseMoveTime > SLEEP_TIMEOUT)) {
+      stateController.handleMouseSleep();
     }
 
-    if (!isSleeping && !idleActionActive) {
+    if (visibleState === 'idle') {
       updateTargets();
       applySmoothEyes();
       updateBlink(timestamp);
     }
 
-    if (!isSleeping) {
-      checkIdleActions(timestamp);
-    }
+    checkIdleActions(timestamp);
     requestAnimationFrame(gameLoop);
   }
 
@@ -654,24 +487,16 @@
 
     // 更新空闲计时 → 如有位移则唤醒
     if (mouseX !== lastMouseX || mouseY !== lastMouseY) {
-      lastMouseMoveTime = performance.now();
-      if (isSleeping) {
-        wakeUp();
-        return;  // 唤醒目标函数已重置 hasMouse，本次帧跳过渲染
-      }
+      stateController.handleMouseActivity();
+      resetMouseIdle();
     }
     lastMouseX = mouseX;
     lastMouseY = mouseY;
   });
 
-  // CodeBuddy hook 事件 → 宠物状态（通用通道）
+  // Codex Hook 事件经主进程归一化后 → 宠物状态（统一通道）
   window.petAPI.onTriggerState(function (state) {
-    triggerExternalState(state);
-  });
-
-  // 向后兼容：旧版 /happy 路由直接触发
-  window.petAPI.onTriggerHappy(function () {
-    triggerHappy();
+    stateController.handleHookState(state);
   });
 
   scheduleBlink();

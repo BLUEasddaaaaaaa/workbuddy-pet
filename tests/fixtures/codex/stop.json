@@ -1,0 +1,11 @@
+{
+  "session_id": "thr_test",
+  "turn_id": "turn_test",
+  "transcript_path": "/private/secret/transcript.jsonl",
+  "cwd": "/private/project",
+  "hook_event_name": "Stop",
+  "model": "test-model",
+  "permission_mode": "default",
+  "stop_hook_active": false,
+  "last_assistant_message": "private answer"
+}

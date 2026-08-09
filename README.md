@@ -1,6 +1,6 @@
-# WorkBuddy Pet 🐾
+# Blueberry Pet 🐾
 
-A pixel-art desktop pet that reacts to your CodeBuddy AI coding assistant in real-time — thinking when you send a prompt, working when tools are called, and celebrating with a happy dance when tasks complete!
+A low-interruption pixel desktop companion that turns Codex lifecycle events into ambient visual feedback. It shows whether Codex is thinking, using tools, waiting for permission, finished, or inactive without adding a second chat window.
 
 [English](#english) | [中文](#中文)
 
@@ -10,7 +10,7 @@ A pixel-art desktop pet that reacts to your CodeBuddy AI coding assistant in rea
 
 ## ✨ Features
 
-- **Real-time CodeBuddy integration** — Pet reacts to every AI event: thinking, working, task complete
+- **Codex Hook integration** — Pet reacts to prompts, local tools, permission requests, completion, and session lifecycle
 - **Eye tracking** — Pet's eyes follow your mouse cursor (idle state)
 - **Natural blinking** — Random 4-9s blink cycle with 3% double-blink chance
 - **Auto sleep** — Falls asleep after 60s of inactivity, wakes on mouse move
@@ -19,6 +19,7 @@ A pixel-art desktop pet that reacts to your CodeBuddy AI coding assistant in rea
 - **Completion sound** — Cheerful arpeggio (C5→C6) on task completion
 - **Zero interference** — 160×160px transparent always-on-top window
 - **Pixel art style** — Cute pixel-art sprites with smooth CSS animations
+- **Session-aware animation scheduling** — Priorities, minimum display times, and duplicate suppression prevent high-frequency Hooks from constantly restarting the pet
 
 ## 🎬 Animation States
 
@@ -27,8 +28,8 @@ A pixel-art desktop pet that reacts to your CodeBuddy AI coding assistant in rea
 | **Idle** | Default / Session start | Static PNG + SVG eyes tracking cursor |
 | **Thinking** | User sends prompt | `think.gif` + floating animation |
 | **Working** | AI calls tools (read/write files) | `work.gif` + wobble animation |
-| **Happy** ★ | AI completes task / Task notification popup | `happy.gif` + bounce + sound effect |
-| **Attention** | Permission request / Other notifications | `think.gif` + pulse animation |
+| **Happy** ★ | Codex completes a turn | `happy.gif` + bounce + sound effect |
+| **Attention** | Codex requests permission | `think.gif` + pulse animation |
 | **Sleeping** | 60s inactivity / Session end | `pet-sleeping.gif` + breathing pulse |
 | **Reading** | Idle random (5% / 10s check) | `read.gif` + floating animation |
 
@@ -37,13 +38,14 @@ A pixel-art desktop pet that reacts to your CodeBuddy AI coding assistant in rea
 ### Prerequisites
 
 - [Node.js](https://nodejs.org/) v18+
-- [CodeBuddy](https://www.codebuddy.ai/) (optional, for AI event integration)
+- Python 3.10+
+- Codex with [Hooks](https://learn.chatgpt.com/docs/hooks) enabled
 
 ### Install & Run
 
 ```bash
 # Clone the repository
-git clone https://github.com/YOUR_USERNAME/workbuddy-pet.git
+git clone https://github.com/BLUEasddaaaaaaa/workbuddy-pet.git
 cd workbuddy-pet
 
 # Install dependencies
@@ -62,47 +64,50 @@ The pet will appear in the bottom-right corner of your screen!
 npm start -- --scale=2
 ```
 
-## 🔗 CodeBuddy Integration
+## 🔗 Codex Integration
 
-The pet connects to CodeBuddy via its Hook system. When CodeBuddy events fire, the hook script sends state updates to the pet's local HTTP server.
+Codex launches a short-lived Python adapter for each configured lifecycle event. The adapter creates a privacy-filtered Blueberry event, sends it to `127.0.0.1:18920/event`, writes the neutral Hook result `{}`, and exits.
 
 ### Hook Event Mapping
 
-| CodeBuddy Hook | Condition | Pet State |
-|---------------|-----------|-----------|
-| `SessionStart` | — | idle |
+| Codex Hook | Condition | Pet State |
+|------------|-----------|-----------|
+| `SessionStart` | `startup`, `resume`, or `clear` | idle |
 | `SessionEnd` | — | sleeping |
 | `UserPromptSubmit` | — | thinking |
 | `PreToolUse` | — | working |
 | `PostToolUse` | — | working |
+| `PermissionRequest` | Approval is required | attention |
 | `Stop` | `stop_hook_active === false` | **happy** ★ |
 | `Stop` | `stop_hook_active === true` | *(skipped)* |
-| `Notification` | `notification_type === "idle_prompt"` | **happy** ★ |
-| `Notification` | other types | attention |
-| `PreCompact` | — | idle |
 
 ### Install Hooks
 
-Add the following to `~/.codebuddy/settings.json`:
+Check the local runtimes:
 
-```json
-{
-  "hooks": {
-    "SessionStart":     [{"type":"command","command":"node /path/to/workbuddy-pet/hooks/codebuddy-hook.js SessionStart"}],
-    "SessionEnd":       [{"type":"command","command":"node /path/to/workbuddy-pet/hooks/codebuddy-hook.js SessionEnd"}],
-    "UserPromptSubmit": [{"type":"command","command":"node /path/to/workbuddy-pet/hooks/codebuddy-hook.js UserPromptSubmit"}],
-    "PreToolUse":       [{"type":"command","command":"node /path/to/workbuddy-pet/hooks/codebuddy-hook.js PreToolUse"}],
-    "PostToolUse":      [{"type":"command","command":"node /path/to/workbuddy-pet/hooks/codebuddy-hook.js PostToolUse"}],
-    "Stop":             [{"type":"command","command":"node /path/to/workbuddy-pet/hooks/codebuddy-hook.js Stop"}],
-    "Notification":     [{"type":"command","command":"node /path/to/workbuddy-pet/hooks/codebuddy-hook.js Notification"}],
-    "PreCompact":       [{"type":"command","command":"node /path/to/workbuddy-pet/hooks/codebuddy-hook.js PreCompact"}]
-  }
-}
+```bash
+python3 --version
+node --version
 ```
 
-> Replace `/path/to/workbuddy-pet` with your actual installation path.
+Open [`hooks/codex-hooks.example.json`](hooks/codex-hooks.example.json), replace `/absolute/path/to/workbuddy-pet` with this repository's absolute path, and merge its `hooks` entries into `~/.codex/hooks.json`.
 
-Restart CodeBuddy after updating the settings file.
+Do not overwrite existing hooks: Codex runs all matching definitions. Restart Codex, open `/hooks`, review the source, and trust the exact Blueberry definition before testing it.
+
+To uninstall, remove only the Blueberry handlers from `~/.codex/hooks.json`. Leave unrelated hooks unchanged.
+
+### Privacy and Failure Behavior
+
+Blueberry allowlists event identity, session/turn/tool-call IDs, session start source, and tool name. It does not send or persist prompts, commands, code, paths, transcripts, tool input/output, final messages, environment variables, or credentials.
+
+If Blueberry is closed or the loopback request times out, the Hook exits normally without retrying. It never approves, denies, rewrites, blocks, or continues Codex.
+
+### Troubleshooting
+
+- **No reaction:** start Blueberry, verify port `18920`, then review trust state with `/hooks`.
+- **Port already in use:** close the other process or Blueberry instance; the pet window remains available and logs a diagnostic.
+- **Python not found:** use an absolute Python 3 path in the Hook command.
+- **Hook changed:** review and trust the new definition again; Codex trust is tied to the current Hook hash.
 
 ## 🎮 Interaction
 
@@ -127,9 +132,9 @@ curl -X POST http://127.0.0.1:18920/state \
 
 Valid states: `idle`, `thinking`, `working`, `happy`, `sleeping`, `attention`
 
-### POST /happy
+### POST /event
 
-Backward-compatible endpoint (equivalent to `POST /state {"state":"happy"}`).
+Used by `codex_hook.py` for validated Blueberry protocol events. Manual animation checks should use `/state`.
 
 ## 📦 Build
 
@@ -161,7 +166,6 @@ Place GIF files in the `assets/` directory following the naming convention:
 | `happy.gif` | Happy/celebration animation |
 | `pet-sleeping.gif` | Sleeping animation |
 | `read.gif` | Idle reading animation |
-| `attention.gif` | Attention/notification animation (optional, falls back to `think.gif`) |
 
 Requirements:
 - Pixel art style, matching `mypet.png`
@@ -173,7 +177,7 @@ Requirements:
 
 ```
 workbuddy-pet/
-├── main.js                 # Electron main process: window, HTTP server, mouse polling
+├── main.js                 # Electron window, event-server composition, mouse polling
 ├── preload.js              # IPC bridge (contextBridge)
 ├── package.json            # Project config & build settings
 ├── assets/
@@ -184,11 +188,19 @@ workbuddy-pet/
 │   ├── pet-sleeping.gif    # Sleeping animation
 │   └── read.gif            # Reading animation
 ├── hooks/
-│   └── codebuddy-hook.js   # CodeBuddy Hook script
-└── src/renderer/
-    ├── index.html          # Main window HTML
-    ├── renderer.js         # Core logic: state machine, eye tracking, game loop
-    └── style.css           # State animations & layout
+│   ├── codex_hook.py               # Privacy-safe Codex adapter
+│   └── codex-hooks.example.json    # Codex configuration example
+└── src/
+    ├── main/
+    │   ├── event-router.js         # Protocol validation and state mapping
+    │   ├── event-server.js         # Loopback HTTP and event deduplication
+    │   ├── state-coordinator.js     # Per-session priority and display holds
+    │   └── renderer-state-bridge.js # Renderer-readiness buffering
+    └── renderer/
+        ├── external-state-policy.js # Actual visual-state deduplication
+        ├── index.html
+        ├── renderer.js
+        └── style.css
 ```
 
 ## 📄 License
@@ -201,7 +213,7 @@ workbuddy-pet/
 
 ## ✨ 功能特点
 
-- **CodeBuddy 实时联动** — 宠物根据 AI 事件做出反应：思考、工作、任务完成庆祝
+- **Codex Hook 实时联动** — 宠物根据提示、工具调用、权限请求、完成和会话生命周期做出反应
 - **眼球追踪** — 宠物眼睛跟随鼠标移动（idle 状态下）
 - **自然眨眼** — 4-9 秒随机眨眼，3% 概率双眨
 - **自动睡觉** — 60 秒无操作自动入睡，鼠标移动唤醒
@@ -218,8 +230,8 @@ workbuddy-pet/
 | **Idle（待机）** | 默认 / 会话开始 | 静态 PNG + SVG 眼睛追踪光标 |
 | **Thinking（思考）** | 用户发送消息 | `think.gif` + 浮动动画 |
 | **Working（工作）** | AI 调用工具 | `work.gif` + 摇晃动画 |
-| **Happy（开心）★** | AI 完成任务 / 任务弹窗 | `happy.gif` + 弹跳 + 音效 |
-| **Attention（注意）** | 权限请求 / 其他通知 | `think.gif` + 脉冲动画 |
+| **Happy（开心）★** | Codex 完成一轮任务 | `happy.gif` + 弹跳 + 音效 |
+| **Attention（注意）** | Codex 请求权限 | `think.gif` + 脉冲动画 |
 | **Sleeping（睡眠）** | 60秒无操作 / 会话结束 | `pet-sleeping.gif` + 呼吸脉冲 |
 | **Reading（阅读）** | 待机随机(5% / 10秒检查) | `read.gif` + 浮动动画 |
 
@@ -228,13 +240,14 @@ workbuddy-pet/
 ### 前置要求
 
 - [Node.js](https://nodejs.org/) v18+
-- [CodeBuddy](https://www.codebuddy.ai/)（可选，用于 AI 事件联动）
+- Python 3.10+
+- 已启用 [Hooks](https://learn.chatgpt.com/docs/hooks) 的 Codex
 
 ### 安装与运行
 
 ```bash
 # 克隆仓库
-git clone https://github.com/YOUR_USERNAME/workbuddy-pet.git
+git clone https://github.com/BLUEasddaaaaaaa/workbuddy-pet.git
 cd workbuddy-pet
 
 # 安装依赖
@@ -253,47 +266,50 @@ npm start
 npm start -- --scale=2
 ```
 
-## 🔗 CodeBuddy 联动
+## 🔗 Codex 联动
 
-桌宠通过 CodeBuddy 的 Hook 系统连接。当 CodeBuddy 事件触发时，Hook 脚本向桌宠的本地 HTTP 服务发送状态更新。
+Codex 在每个已配置的生命周期事件上启动一个短生命周期 Python 适配器。适配器生成经过隐私过滤的 Blueberry 事件，发送到 `127.0.0.1:18920/event`，向 Codex 输出中立结果 `{}` 后退出。
 
 ### Hook 事件映射
 
-| CodeBuddy Hook | 条件 | 宠物状态 |
-|---------------|------|---------|
-| `SessionStart` | — | idle |
+| Codex Hook | 条件 | 宠物状态 |
+|------------|------|---------|
+| `SessionStart` | `startup`、`resume` 或 `clear` | idle |
 | `SessionEnd` | — | sleeping |
 | `UserPromptSubmit` | — | thinking |
 | `PreToolUse` | — | working |
 | `PostToolUse` | — | working |
+| `PermissionRequest` | 需要审批 | attention |
 | `Stop` | `stop_hook_active === false` | **happy** ★ |
 | `Stop` | `stop_hook_active === true` | *(跳过)* |
-| `Notification` | `notification_type === "idle_prompt"` | **happy** ★ |
-| `Notification` | 其他类型 | attention |
-| `PreCompact` | — | idle |
 
 ### 安装 Hook
 
-将以下内容添加到 `~/.codebuddy/settings.json`：
+先检查本机运行时：
 
-```json
-{
-  "hooks": {
-    "SessionStart":     [{"type":"command","command":"node /你的安装路径/workbuddy-pet/hooks/codebuddy-hook.js SessionStart"}],
-    "SessionEnd":       [{"type":"command","command":"node /你的安装路径/workbuddy-pet/hooks/codebuddy-hook.js SessionEnd"}],
-    "UserPromptSubmit": [{"type":"command","command":"node /你的安装路径/workbuddy-pet/hooks/codebuddy-hook.js UserPromptSubmit"}],
-    "PreToolUse":       [{"type":"command","command":"node /你的安装路径/workbuddy-pet/hooks/codebuddy-hook.js PreToolUse"}],
-    "PostToolUse":      [{"type":"command","command":"node /你的安装路径/workbuddy-pet/hooks/codebuddy-hook.js PostToolUse"}],
-    "Stop":             [{"type":"command","command":"node /你的安装路径/workbuddy-pet/hooks/codebuddy-hook.js Stop"}],
-    "Notification":     [{"type":"command","command":"node /你的安装路径/workbuddy-pet/hooks/codebuddy-hook.js Notification"}],
-    "PreCompact":       [{"type":"command","command":"node /你的安装路径/workbuddy-pet/hooks/codebuddy-hook.js PreCompact"}]
-  }
-}
+```bash
+python3 --version
+node --version
 ```
 
-> 将 `/你的安装路径/workbuddy-pet` 替换为实际安装路径。
+打开 [`hooks/codex-hooks.example.json`](hooks/codex-hooks.example.json)，将 `/absolute/path/to/workbuddy-pet` 替换为仓库绝对路径，再把其中的 `hooks` 条目合并到 `~/.codex/hooks.json`。
 
-更新设置文件后重启 CodeBuddy 即可生效。
+不要覆盖已有 Hook；Codex 会运行所有匹配的定义。重启 Codex 后打开 `/hooks`，审阅来源并信任当前 Blueberry 定义。
+
+卸载时只删除 `~/.codex/hooks.json` 中 Blueberry 对应的 handler，不要删除其他 Hook。
+
+### 隐私与降级
+
+Blueberry 只允许事件标识、session/turn/tool-call ID、会话开始来源和工具名称进入协议。它不发送或持久化提示词、命令、代码、路径、transcript、工具输入输出、最终消息、环境变量或凭证。
+
+桌宠关闭或回环请求超时时，Hook 会正常退出且不重试。它不会替用户批准、拒绝、重写、阻止或继续 Codex。
+
+### 故障排查
+
+- **没有反应：** 启动 Blueberry，确认端口 `18920`，再通过 `/hooks` 检查信任状态。
+- **端口被占用：** 关闭其他 Blueberry 实例或占用进程；桌宠窗口仍会显示并记录诊断。
+- **找不到 Python：** 在 Hook command 中使用 Python 3 的绝对路径。
+- **Hook 更新后失效：** 重新审阅并信任；Codex 的信任与当前 Hook hash 绑定。
 
 ## 🎮 交互
 
@@ -318,9 +334,9 @@ curl -X POST http://127.0.0.1:18920/state \
 
 合法状态：`idle`、`thinking`、`working`、`happy`、`sleeping`、`attention`
 
-### POST /happy
+### POST /event
 
-向后兼容接口（等价于 `POST /state {"state":"happy"}`）。
+由 `codex_hook.py` 发送经过验证的 Blueberry 协议事件。手动测试动画请继续使用 `/state`。
 
 ## 📦 构建
 
@@ -352,7 +368,6 @@ npm run build:all
 | `happy.gif` | 开心/庆祝动画 |
 | `pet-sleeping.gif` | 睡眠动画 |
 | `read.gif` | 待机阅读动画 |
-| `attention.gif` | 注意/通知动画（可选，缺失时回退到 `think.gif`） |
 
 要求：
 - 像素风格，与 `mypet.png` 一致

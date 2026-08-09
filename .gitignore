@@ -27,7 +27,15 @@ npm-debug.log*
 # CodeBuddy internal data
 .codebuddy/
 .workbuddy/
+.blueberry/
 
 # Temp files
 *.tmp
 .tmp_*
+
+# Python cache
+__pycache__/
+*.py[cod]
+
+# Isolated development worktrees
+.worktrees/
