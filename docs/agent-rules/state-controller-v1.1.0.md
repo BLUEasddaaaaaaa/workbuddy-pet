@@ -57,3 +57,22 @@
 - 真正显示 Sleeping 后，睡眠前的 Thinking/Working 不再是有效恢复目标；唤醒基线为 Idle。持续 Hook 会成为新的逻辑状态；Attention/Happy 播放满 2000 ms 后按唤醒以来收到的最新逻辑状态重新计算。
 - SessionEnd 只把逻辑状态更新为 Idle。保护中的一次性动画播放完成后再按最新逻辑状态计算。
 - 后续设计或修改控制器前重新确认本文件。若实现会产生第二个可见状态权威，立即停止并报告。
+
+## Renderer 显示映射
+
+验收脚本验证 DOM 时必须使用下表，不得根据状态名称自行推导 CSS class 或图片 ID。
+
+| `visibleState` | 容器 CSS class | 主要可见图片 | 附加表现 |
+|---|---|---|---|
+| `idle` | 无状态 class | `pet-img` | SVG 眼睛层显示。 |
+| `idle-reading` | `reading` | `read-img` | 阴影显示。 |
+| `idle-thinking` | `thinking` | `think-img` | 阴影显示。 |
+| `thinking` | `thinking` | `think-img` | 阴影显示。 |
+| `working` | `working` | `work-img` | 阴影显示；`work.gif` 不可用时允许降级为 `pet-img` 与 SVG 眼睛层。 |
+| `attention` | `attention` | `attention-img` | 阴影显示。 |
+| `happy` | `happy` | `happy-img` | 阴影显示；首次进入 Happy 时播放一次完成音效。 |
+| `sleeping` | `sleeping` | `sleep-img` | 清除当前鼠标跟随状态。 |
+
+- `idle` 没有 `idle` CSS class；它由状态控制器快照中的 `visibleState: "idle"`、`pet-img` 可见及 SVG 眼睛层显示共同证明。
+- DOM 映射的当前实现来源是 `src/renderer/renderer.js` 中唯一的 `renderVisualState(state)`；若实现与本表不一致，必须停止并先确认是规则过期还是产品回归，不得为通过验收临时放宽断言。
+- 状态控制器快照证明逻辑/可见状态与计时，DOM class、图片和计算样式证明实际渲染；两类证据不能互相替代。

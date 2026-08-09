@@ -12,18 +12,14 @@
 
 ## 当前状态
 
-- 此前复杂的多模块状态仲裁实现已经回滚到稳定基线。
-- 回滚保留了失败证据、迭代记录和开发规则。
-- Task 3 Renderer 接入已经完成自动化检查、独立规格审查和代码质量审查。
-- Hook、鼠标睡眠和随机待机动作已统一进入唯一 Renderer 状态控制器；旧完成策略和竞争状态计时器已经删除。
-- Task 4 风险回归测试已经完成，并通过独立规格审查和代码质量审查。
-- 自动化测试已锁定晚到计时器、单一计时器所有权、过期 pending 不补播和 Renderer 竞争状态逻辑防回退。
-- 验收模式只读状态接口已经实现；只有 `BLUEBERRY_ACCEPTANCE=1` 时暴露不可写的 `snapshot()`，普通模式下不存在。
-- Task 5 worktree 运行验收已经通过：两轮真实 fixtures 状态顺序一致，保护时间、pending、重复状态、一次性返回和自然睡眠唤醒均符合规则。
-- 当前 JavaScript 74/74、Python 10/10 通过，完整 Renderer 状态控制工作包已通过最终独立审查。
-- 当前结论只覆盖 worktree 运行时；安装包身份、安装运行时、真实 Codex 配置及发布门槛尚未完成。
-- 当前 v1.1.0 不能描述为完成、验收通过或可以发布。
-- `/Applications/Blueberry.app` 仍是此前安装的旧版本，不代表当前 worktree。
+- Blueberry v1.1.0 的冻结候选提交为 `18c2cb61c6571349b0b5078bfdca4e0fa5dbd6cd`。
+- 发布阶段 1–8 已通过：候选冻结、干净构建、制品身份、审计安装、安装版本运行验收、真实单对话 Codex Hook 验收、失败降级和真实回滚验收。
+- 两轮安装运行的状态顺序均为：Idle → Thinking → Working → Attention → Happy → Idle。
+- 真实 Codex PreToolUse/PostToolUse 已驱动安装版 Blueberry 显示 Working，重复 Working 没有重启动画。
+- PermissionRequest 与 SessionEnd 本轮没有自然触发，使用安装运行时 Python fixtures 验证，不得描述为真实 Codex 自然触发。
+- Apple Silicon DMG SHA-256 为 `7aea9e804bbc29b72696ad433d0351713e6f9b770ad1892657e2d51f94808fd6`。
+- 当前应用仅支持 Apple Silicon，未使用 Developer ID 正式签名，也未经过 Apple notarization。
+- v1.1.0 可以描述为“本地 release candidate 已通过验收”，但 GitHub 发布完成前不能描述为“已发布到 GitHub”。
 
 ## 已确认的关键决定
 
@@ -47,8 +43,8 @@
 
 ## 下一步
 
-- 按 `docs/superpowers/plans/2026-08-02-blueberry-v1.1.0-renderer-state-controller.md` 执行。
-- 首个开发检查点已经完成：
-  1. `SessionEnd -> Idle` 路由修正及失败测试；
-  2. 纯 Renderer 状态控制器及假时钟测试。
-- 用户已批准发布流程阶段 1 和阶段 2：冻结唯一候选提交并执行干净的 macOS arm64 构建；不安装、不替换 `/Applications/Blueberry.app`、不推送、不发布。
+- 完成阶段九的上下文记录与最终文档检查。
+- 执行完整自动化测试、文档检查和候选身份复核。
+- 执行阶段十：确认 Git 分支范围，推送代码，按冻结候选创建版本标签和 GitHub 测试/预发布 Release。
+- 上传 `Blueberry-1.1.0-arm64.dmg`，重新下载 GitHub Release 制品并核对 SHA-256。
+- GitHub Release 必须明确披露 Apple Silicon only、未签名、未公证以及条件 Hook 的验收边界。
