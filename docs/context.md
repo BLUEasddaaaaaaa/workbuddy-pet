@@ -18,8 +18,10 @@
 - 真实 Codex PreToolUse/PostToolUse 已驱动安装版 Blueberry 显示 Working，重复 Working 没有重启动画。
 - PermissionRequest 与 SessionEnd 本轮没有自然触发，使用安装运行时 Python fixtures 验证，不得描述为真实 Codex 自然触发。
 - Apple Silicon DMG SHA-256 为 `7aea9e804bbc29b72696ad433d0351713e6f9b770ad1892657e2d51f94808fd6`。
-- 当前应用仅支持 Apple Silicon，未使用 Developer ID 正式签名，也未经过 Apple notarization。
-- v1.1.0 可以描述为“本地 release candidate 已通过验收”，但 GitHub 发布完成前不能描述为“已发布到 GitHub”。
+- v1.1.0 已通过 PR #1 合并到远端 `main`，GitHub 合并提交为 `3a7c75f8ca949dc3a05fd657a4bf07f11dbf3838`。
+- `v1.1.0` 标签指向冻结候选 `18c2cb61c6571349b0b5078bfdca4e0fa5dbd6cd`。
+- GitHub 已发布 Apple Silicon 测试/预发布 Release；远端 DMG 重新下载后的 SHA-256 与本地验收制品一致。
+- 当前版本仍未使用 Developer ID 正式签名，也未经过 Apple notarization，因此不能描述为已满足 macOS 公开安全分发标准。
 
 ## 已确认的关键决定
 
@@ -43,8 +45,6 @@
 
 ## 下一步
 
-- 完成阶段九的上下文记录与最终文档检查。
-- 执行完整自动化测试、文档检查和候选身份复核。
-- 执行阶段十：确认 Git 分支范围，推送代码，按冻结候选创建版本标签和 GitHub 测试/预发布 Release。
-- 上传 `Blueberry-1.1.0-arm64.dmg`，重新下载 GitHub Release 制品并核对 SHA-256。
-- GitHub Release 必须明确披露 Apple Silicon only、未签名、未公证以及条件 Hook 的验收边界。
+- v1.1.0 发布流程结束，保留功能分支和 worktree 供后续审查，不进行清理。
+- 开始 v1.2.0 前，重新读取产品语义、状态控制器、测试验收和发布规则。
+- v1.2.0 优先研究更细的 Hook 行为、PermissionRequest 提醒策略、Stop 完成语义及可复用自动发布验收脚本。
